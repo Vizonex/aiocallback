@@ -14,7 +14,7 @@ An asynchronous helper for writing custom event wrapper class functions and is a
 
 One of my biggest pet peves of all time is when **callbacks are not being properly hinted at**. This library aims to fix that for vscode and other ides such as when calling the send() function.
 
-<img src="Typehinting-Example.png" width="500px"/>
+<img src="https://raw.githubusercontent.com/Vizonex/aiocallback/main/Typehinting-Example.png" width="500px"/>
 
 
 
@@ -79,4 +79,5 @@ if __name__ == "__main__":
 ```
 
 # TODO:
-    [] pypi release
+
+- [x] pypi release
