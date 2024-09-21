@@ -8,7 +8,7 @@
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
 
-An asynchronous helper for writing custom event wrapper class functions and is a good framework for library development made with good typehinting that is built around [aiosignal](https://github.com/aio-libs/aiosignal) under the hood with a few modifications added onto it for better typehinting and easy usage. 
+An asynchronous helper for writing custom event wrapper class functions and is a good framework for library development made with good typehinting that is built around [aiosignal](https://github.com/aio-libs/aiosignal) under the hood with a few modifications added onto it for better typehinting and easy usage. You will find this to be simillarly inspired to the way aiohttp's traceconfig is used but made a bit easier.
 
 
 One of my biggest pet peves of all time is when **callbacks are not being properly hinted at**. This library aims to fix that for vscode and other ides such as when calling the send() function.
