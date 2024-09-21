@@ -80,4 +80,4 @@ if __name__ == "__main__":
 
 # TODO:
 
-- [x] pypi release
+- [X] pypi release
