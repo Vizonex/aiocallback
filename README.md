@@ -65,7 +65,7 @@ async def test(cb:str):
 
 
 async def main():
-    # This uses aiosignal under the hood so remeber to freeze the callbacks when your setup is complete
+    # This uses aiosignal under the hood so remember to freeze the callbacks when your setup is complete
     cfg.on_print.freeze()
     cfg.on_nonabstract.freeze()
 
