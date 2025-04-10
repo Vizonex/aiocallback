@@ -21,7 +21,7 @@ __version__ = re.search(
 def main():
     try:
         long_description = (
-            (this_directory / "readme.md").open("r").read()
+            (this_directory / "README.md").open("r").read()
         )
     except Exception:
         long_description = ""
