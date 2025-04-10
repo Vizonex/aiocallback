@@ -17,17 +17,15 @@ class EventWrapper(Signal):
 
     def __call__(self, func):
         """appends a callback function to the event, returns the same function for futher use elsewhere...
-            this is equivilent to calling the `append()` method
-        ::
-
+        this is equivilent to calling the `append()` method::
+            
             from aioevent import EventWrapper
-
+            
             custom_event = EventWrapper()
-
             @custom_event
             async def on_event():
                 ...
-        ::
+
 
         """
         self.append(func)
