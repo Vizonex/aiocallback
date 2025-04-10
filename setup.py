@@ -1,12 +1,27 @@
 from setuptools import setup, find_packages
-from aiocallback import __version__, __author__
-import pathlib
+from pathlib import Path
+import re
+
+# Taught from my past work on aiothreading how to do this...
+
+this_directory = Path(__file__).parent
+
+__author__ = re.search(
+    r'__author__\s*=\s*"(.*?)"',
+    (this_directory / "aiocallback" / "__init__.py").read_text(),
+)[1]
+
+__version__ = re.search(
+    r'__version__\s*=\s*"(.*?)"',
+    (this_directory / "aiocallback" / "__version__.py").read_text(),
+)[1]
+
 
 
 def main():
     try:
         long_description = (
-            (pathlib.Path("aiocallback").parent / "readme.md").open("r").read()
+            (this_directory / "readme.md").open("r").read()
         )
     except Exception:
         long_description = ""
