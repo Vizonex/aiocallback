@@ -121,3 +121,6 @@ class contextevent:
 def subclasscontextevent(func):
     """Turns off abstract functions allowing inner functions to be events"""
     return contextevent(func, abstract=False)
+
+# TODO (Vizonex): Optional Metaclass for finding callback wrappers so a freeze_all() method can be implemented in safely? 
+
