@@ -122,5 +122,59 @@ def subclasscontextevent(func):
     """Turns off abstract functions allowing inner functions to be events"""
     return contextevent(func, abstract=False)
 
-# TODO (Vizonex): Optional Metaclass for finding callback wrappers so a freeze_all() method can be implemented in safely? 
+
+
+
+# Inspired by PEP 3115's example
+class event_table(dict):
+    def __init__(self):
+        self.events:dict[str, event | contextevent] = {}
+
+    def __setitem__(self, key, value):
+        # if the key is not already defined, add to the
+        # list of keys.
+        if key not in self:
+            # see if were either an event or context event.
+            if isinstance(value, (event, contextevent)):
+                self.events[key] = value
+
+        # Call superclass
+        dict.__setitem__(self, key, value)
+
+
+class EventListMetaclass(type):
+    """A Freezeable Metaclass for getting rid of unneeded boilerplate code when needing to 
+    freeze mulitple functions tied to one class"""
+
+    @classmethod
+    def __prepare__(cls, name:str, bases:tuple[type, ...]):
+        return event_table()
+    
+    def __new__(cls, name, bases, classdict):
+        result = type.__new__(cls, name, bases, dict(classdict))
+        result._events = classdict.events
+        return result
+
+
+class EventList(metaclass=EventListMetaclass):
+    """A Subclassable Helper for freezing up multiple callbacks together without needing to handle it all yourself"""
+    # TODO: Events should not be edited in any capacity after 
+
+    _events:dict[str, event | contextevent]
+
+    @property
+    def events(self) -> list[str]:
+        """A List of event names attached to this class object"""
+        # NOTE: setting up events as a dictionary rather than a 
+        # list discouraging altering later down the road.
+        return list(self._events.keys())
+
+    def freeze(self):
+        """Freezes up all the different callback events 
+        that were configured"""
+        for e in self._events.keys():
+            # incase for some reason something is overwritten by the end developer
+            object.__getattribute__(self, e).freeze()
+
+
 
