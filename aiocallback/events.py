@@ -39,12 +39,6 @@ class SelfEventWrapper(EventWrapper):
         return await super().send(self._owner, *args, **kwargs)
 
 
-# def freeze_events(base: _TEvent[Union[SelfEventWrapper, EventWrapper]]):
-#     """Freezes all events for a base context object for making events easier to serlize
-#     before beginning to use the inner signals for different callbacks"""
-#     for v in property.base:
-#         if isinstance(v, EventWrapper):
-#             v.freeze()
 
 
 class event:
