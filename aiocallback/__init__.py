@@ -4,6 +4,8 @@ from .events import (
     SelfEventWrapper,
     contextevent,
     event,
+    EventList,
+    EventListMetaclass,
     subclasscontextevent,
     subclassevent,
 )
