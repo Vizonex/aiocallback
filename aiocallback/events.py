@@ -127,7 +127,9 @@ class event_table(dict):
     def __setitem__(self, key, value):
         # if the key is not already defined, add to the
         # list of keys.
+        # print((key,value))
         if key not in self:
+            # print((key,value))
             # see if were either an event or context event.
             if isinstance(value, (event, contextevent)):
                 self.events[key] = value
@@ -145,6 +147,13 @@ class EventListMetaclass(type):
         return event_table()
     
     def __new__(cls, name, bases, classdict):
+        for b in bases:
+            if isinstance(b, EventListMetaclass):
+                for k, v in b._events.items():
+                    if k in classdict.events:
+                        raise ValueError(f"Event named {k} should only be defined once")
+                    classdict.events[k] = v
+
         result = type.__new__(cls, name, bases, dict(classdict))
         result._events = classdict.events
         return result
@@ -152,23 +161,21 @@ class EventListMetaclass(type):
 
 class EventList(metaclass=EventListMetaclass):
     """A Subclassable Helper for freezing up multiple callbacks together without needing to handle it all yourself"""
-    # TODO: Events should not be edited in any capacity after 
-
-    _events:dict[str, event | contextevent]
 
     @property
-    def events(self) -> list[str]:
-        """A List of event names attached to this class object"""
-        # NOTE: setting up events as a dictionary rather than a 
-        # list discouraging altering later down the road.
-        return list(self._events.keys())
+    def events(self) -> frozenset[str]:
+        """An immutable set of event names attached to this class object"""
+        return frozenset(self._events.keys())
 
     def freeze(self):
         """Freezes up all the different callback events 
         that were configured"""
         for e in self._events.keys():
+            # print(e)
             # incase for some reason something is overwritten by the end developer
             object.__getattribute__(self, e).freeze()
 
 
+
+    
 
