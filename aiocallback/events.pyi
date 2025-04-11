@@ -64,8 +64,9 @@ class EventListMetaclass(type):
 
 class EventList(metaclass=EventListMetaclass):
     """A Subclassable Helper for freezing up multiple callbacks together without needing to handle it all yourself"""
-    _events:ClassVar[dict[str, event | contextevent]]
+    # _events:ClassVar[dict[str, event | contextevent]]
 
     def freeze(self) -> None:
         """Freezes up the different callback events that were configured"""
-
+    @property
+    def events(self) -> frozenset[str]:...
