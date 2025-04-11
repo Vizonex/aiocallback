@@ -56,3 +56,16 @@ def contextevent(
 def subclasscontextevent(
     func: Callable[Concatenate[_TOwner, P], Awaitable[T]],
 ) -> EventWrapper[P, T]: ...
+
+
+class EventListMetaclass(type):
+    """A Freezeable Metaclass for getting rid of unneeded boilerplate code when needing to 
+    freeze mulitple functions tied to one class"""
+
+class EventList(metaclass=EventListMetaclass):
+    """A Subclassable Helper for freezing up multiple callbacks together without needing to handle it all yourself"""
+    _events:ClassVar[dict[str, event | contextevent]]
+
+    def freeze(self) -> None:
+        """Freezes up the different callback events that were configured"""
+
