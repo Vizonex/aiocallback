@@ -31,7 +31,7 @@ def main():
         author=__author__,
         version=__version__,
         packages=find_packages(),
-        install_requires=["aiosignal", "typing_extensions"],
+        install_requires=["frozenlist", "typing_extensions"],
         include_package_data=True,
         description="A library for helping configure callbacks with asyncio and aiosignal",
         long_description=long_description,
