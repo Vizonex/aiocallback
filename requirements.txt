@@ -1,4 +1,2 @@
 frozenlist
 typing_extensions
-pytest
-pytest-asyncio

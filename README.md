@@ -2,13 +2,14 @@
 [![PyPI version](https://badge.fury.io/py/aiocallback.svg)](https://badge.fury.io/py/aiocallback)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/aiocallback)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![Tests](/aiocallback/actions/workflows/tests.yml/badge.svg)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
 
-An asynchronous helper for writing custom event wrapper class functions and is a good framework for library development made with good typehinting that is built around [aiosignal](https://github.com/aio-libs/aiosignal) under the hood with a few modifications added onto it for better typehinting and easy usage. You will find this to be simillarly inspired to the way aiohttp's traceconfig is used but made a bit easier.
+An asynchronous helper framework for writing custom event wrapper class functions made with good typehinting that is built from [aiosignal](https://github.com/aio-libs/aiosignal) under the hood with many better modifications added onto it for better typehinting and easy usage with pyright allowing for arguments to be spelled out when using it.
 
 
 One of my biggest pet peves of all time is when **callbacks are not being properly hinted at**. This library aims to fix that for vscode and other ides such as when calling the send() function.
@@ -17,9 +18,15 @@ One of my biggest pet peves of all time is when **callbacks are not being proper
 
 
 
+
+
+
 # Usage:
 
 ## Dependencies
+- frozenlist (The same library aiosignal utilizes)
+- typing-extensions Typehinting for Python 3.9 We plan to drop typing-extensions when 3.9 hits End of Life so that __ParamSpec__ can be utilized to it's fullest potential.
+
 
 ## Installing
 
@@ -65,7 +72,7 @@ async def test(cb:str):
 
 
 async def main():
-    # This uses aiosignal under the hood so remember to freeze the callbacks when your setup is complete
+    # This uses aiosignal under the hood so remeber to freeze the callbacks when your setup is complete
     cfg.on_print.freeze()
     cfg.on_nonabstract.freeze()
 
@@ -77,6 +84,40 @@ if __name__ == "__main__":
 
 ```
 
-# TODO:
+## Using EventLists
+There's an alternative way to use aiocallback where you don't need to freeze many Configurable event descriptors at a time. You should use it if your not planning to use a dataclass although we plan to implement a special EventList for msgspec.
 
-- [X] pypi release
+```python
+from aiocallback import EventList, contextevent
+
+
+
+```
+
+## Why Aiocallback Over Aiosignal Or coding an approch that is like aiohttp's Trace class?
+- Currently Aiohttp's Trace Config is a big example of this problem
+
+    - One of the biggest problems with aiosignal and creating custom tracing tools like [aiohttp's Trace](https://github.com/aio-libs/aiohttp/blob/master/aiohttp/tracing.py) is that it requries a few classes in order to work compared to working with just one.
+
+    - it adds the unwanted time consumption when going in and making them and the fact that it needs to 
+    hop through a few properties in order to finally send the callback all this can be cut with a wrapper 
+    like this one 
+
+- A Developer Wishing to Program via the Trace Config Approch
+    Will be annoyed with the amount of code you need to write
+    and there is a send_xx function on everything. 
+
+- Writing a smaller project has greater sucess and chance of working than writing a big one by yourself.    
+    - From what I've learned in my past experiences is that developers tend to give up if the project becomes too big of a 
+    task. This is why smaller is better and __aiocallback__ hopes to
+    deliver a faster experience to the end developer as well as the user using whatever you choose to make or share. This is why __fastapi__ for example gets more attention than aiohttp does. 
+
+    - The Faster the project gets done the better chance you have of testing it and making smarter changes to it.
+
+
+
+# TODOS
+- [x] Make sure we check with mypy (It works now)
+
+- [ ] Test Suite for aiocallback and eventlists
+

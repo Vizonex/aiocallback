@@ -3,7 +3,16 @@ from __future__ import annotations
 import types
 import warnings
 from functools import partial
-from typing import Any, Callable, Coroutine, Generic, MutableMapping, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Generic,
+    MutableMapping,
+    TypeVar,
+    List,
+    Iterable,
+)
 
 from frozenlist import FrozenList
 from typing_extensions import Concatenate, ParamSpec
@@ -15,17 +24,22 @@ OwnerT = TypeVar("OwnerT")
 AsyncFunction = Callable[P, Coroutine[Any, Any, T]]
 
 
-
 # EventWrapper is on par with aiosignal instead of being it's subclass
-# This ultimately will save a couple of steps for many of the subclasses...
+# This ultimately will save a couple of steps for many of our subclasses...
+
 
 class EventWrapper(FrozenList[AsyncFunction[P, T]]):
     """A wrapper class for making a callback function that carries a few more methods than aiosignal has."""
-    
+
     __slots__ = ("_owner",)
 
-    def __init__(self, owner):
-        super().__init__()
+    def __init__(
+        self,
+        items: List[AsyncFunction[P, T]] | Iterable[AsyncFunction[P, T]] | None = None,
+        /,
+        owner=None,
+    ):
+        super().__init__(items)
         self._owner = owner
 
     def __call__(self, func: AsyncFunction[P, T]):
@@ -46,11 +60,11 @@ class EventWrapper(FrozenList[AsyncFunction[P, T]]):
     def append(self, value):
         return super().append(value)
 
-    # Typehint our signal so that pyright can see 
+    # Typehint our signal so that pyright can see
     # the arguments that need to be passed
     async def send(self, *args: P.args, **kw: P.kwargs) -> None:
         if not self.frozen:
-            raise RuntimeError("Cannot send non-frozen signal.")
+            raise RuntimeError("Cannot send non-frozen events.")
 
         for receiver in self:
             await receiver(*args, **kw)  # type: ignore
@@ -62,10 +76,10 @@ class EventWrapper(FrozenList[AsyncFunction[P, T]]):
 
 
 class SelfEventWrapper(EventWrapper[P, T]):
-    """A wrapper class for making a callback that carries itself for use with each callback..."""
+    """A wrapper class for making an owner object sendable with all the events"""
+    def __init__(self, items = None, /, owner=None):
+        super().__init__(items, owner)
 
-    def __init__(self, owner: OwnerT):
-        super().__init__(owner)
 
     async def send(self, *args: P.args, **kwargs: P.kwargs) -> None:
         return await super().send(self._owner, *args, **kwargs)  # type: ignore
@@ -80,27 +94,21 @@ class event(Generic[OwnerT, P, T]):
         will be considered as nothing but typehinting.
     """
 
-    __slots__ = (
-        "func",
-        "name",
-        "_wrapper"
-    )
+    __slots__ = ("func", "name", "_wrapper")
 
-    _wrapper:EventWrapper[P, T]
+    _wrapper: EventWrapper[P, T]
 
     def __init__(self, func: AsyncFunction[Concatenate[OwnerT, P], T], **kw) -> None:
         self.func = func
         self.name = func.__name__
 
-    
         if hasattr(func, "__isabstractmethod__"):
             warnings.warn(
-                "using an abc.abstractmethod wrapper with an event is discouraged", 
-                UserWarning, 
-                2
+                "using an abc.abstractmethod wrapper with an event is discouraged",
+                UserWarning,
+                2,
             )
 
-        
         # TODO: Remove in 0.1.6
         if kw.get("abstract"):
             warnings.warn(
@@ -109,7 +117,7 @@ class event(Generic[OwnerT, P, T]):
                 2,
             )
 
-    # __doc__ couldn't be made into a slot 
+    # __doc__ couldn't be made into a slot
     # so we had to come up with an alternative method
     @property
     def __doc__(self):
@@ -117,7 +125,7 @@ class event(Generic[OwnerT, P, T]):
 
     def __wrapper_init__(self, owner: OwnerT):
         """A Special dunder method for initalizing an Event Wrapper"""
-        self._wrapper = EventWrapper(owner)
+        self._wrapper = EventWrapper(owner=owner)
         return self._wrapper
 
     # Turns the event into a descriptor variable
@@ -127,73 +135,74 @@ class event(Generic[OwnerT, P, T]):
         self.__wrapper_init__(owner)
         self.name = name
 
-    # inner _event_cache is removed because we found a better way to do this...
+    # inner _event_cache is removed because using slots on the descriptor is faster
 
     def __get__(self, inst: OwnerT, owner) -> EventWrapper[P, T]:
         # if for some reason we did not obtain this during __new__...
-        if not hasattr(self, "wrapper"):
+        if not hasattr(self, "_wrapper"):
             self.__wrapper_init__(owner)
         return self._wrapper
 
-    __class_getitem__ = classmethod(types.GenericAlias) # type:ignore
+    __class_getitem__ = classmethod(types.GenericAlias)  # type:ignore
 
 
 class subclassevent(event[OwnerT, P, T]):
-    """Turns off abstract functionallity and allows it's inner function to be an event"""
-    
+    """Passes the context class to the member descriptor"""
+
     def __wrapper_init__(self, owner: OwnerT):
-        self._wrapper = EventWrapper(owner)
-        self._wrapper.append(partial(self.func, owner))
+        self._wrapper = EventWrapper((partial(self.func, owner),), owner)
         return self._wrapper
 
-    def __get__(
-        self, inst: OwnerT, owner
-    ) -> EventWrapper[P, T]:
+    def __get__(self, inst: OwnerT, owner) -> EventWrapper[P, T]:
         # Incase the user's object does not have a base property to use...
-        if not hasattr(self, "wrapper"):
+        if not hasattr(self, "_wrapper") or self._wrapper._owner != inst:
+            # Wrap the instance so that the context can be edited by the end user
             self.__wrapper_init__(inst)
         return self._wrapper
 
 
 class contextevent(event[OwnerT, P, T]):
-    """An event who's callback Carries the class object as a context to be used with the event...
+    """Sends the class holding the event through each of the callbacks made except for the wrapper itself. 
     
     abstract: `bool` `WARNING IT'S DEPRECATED!` inner function upon being called is considered abstract... \
         if `true` inner custom function will not be called with the `send()` method and it \
         will be considered as nothing but typehinting."""
+
     _wrapper: SelfEventWrapper[P, T]
+
     def __wrapper_init__(self, owner: OwnerT):
-        self._wrapper = SelfEventWrapper(owner)
+        self._wrapper = SelfEventWrapper(owner=owner)
         return self._wrapper
 
-    def __get__(
-        self, inst: OwnerT, owner
-    ) -> SelfEventWrapper[P, T]:
+    def __get__(self, inst: OwnerT, owner) -> SelfEventWrapper[P, T]:
         # Incase the user's object does not have a base property to use...
-        if not hasattr(self, "wrapper"):
+        if not hasattr(self, "_wrapper") or self._wrapper._owner != inst:
             self.__wrapper_init__(inst)
         return self._wrapper
 
 
 class subcontextevent(contextevent):
-    """Turns off abstract functionallity and allows it's inner function to be an event"""
+    """sends the class holding the event as an instance through all the callbacks made including the inner wrapper
+    being utilized."""
 
     def __wrapper_init__(self, owner):
-        self._wrapper = SelfEventWrapper(owner)
-        self._wrapper.append(partial(self.func, owner))
+        self._wrapper = SelfEventWrapper((self.func, ), owner)
         return self._wrapper
+
 
 # TODO: Deprecate the old name
 subclasscontextevent = subcontextevent
 
+
 # Inspired by PEP 3115's example
 class event_table(dict):
     __slots__ = ("events",)
+    events: dict[str, event | contextevent]
     def __init__(self):
-        self.events: dict[str, event | contextevent] = {}
+        self.events = {}
 
     def __setitem__(self, key, value):
-        # if the key is not already defined, add to the
+        # if the key is not already defined, add it to the
         # list of keys.
         if key not in self:
             # see if were either an event or context event.
@@ -202,18 +211,22 @@ class event_table(dict):
 
         # Call superclass
         dict.__setitem__(self, key, value)
-    
 
-# XXX: There's a problem with attrs accepting EventLists 
+
+# XXX: There's a problem with attrs accepting EventLists
 # so there needs to be a workaround inplace in the future
 
+
 class EventListMetaclass(type):
-    """A Freezeable Metaclass for getting rid of unneeded boilerplate code when needing to
-    freeze mulitple functions tied to one class"""
+    """A Freezeable Metaclass for getting rid of 
+   the need of freezing different member descriptors"""
+
     _events: dict[str, event]
 
     @classmethod
-    def __prepare__(cls, name: str, bases: tuple[type, ...], /, **kw) -> MutableMapping[str, object]:
+    def __prepare__(
+        cls, name: str, bases: tuple[type, ...], /, **kw
+    ) -> MutableMapping[str, object]:
         classdict = event_table()
         for b in bases:
             if isinstance(b, EventListMetaclass):
@@ -223,14 +236,18 @@ class EventListMetaclass(type):
                     classdict.events[k] = v
         return classdict
 
-    def __new__(cls, name, bases, classdict):
-        result = type.__new__(cls, name, bases, classdict)
-        result._events = classdict.events # type:ignore
+    def __new__(cls, name: str, bases: tuple[type, ...], classdict: dict, /, **kw):
+        result = type.__new__(cls, name, bases, classdict, **kw)
+        result._events = classdict.events  # type:ignore (classdict is actually event_table())
         return result
 
+
 class EventList(metaclass=EventListMetaclass):
-    """A Subclassable Helper for freezing up multiple callbacks together without needing to handle it all yourself"""
+    """A Subclassable Helper for freezing up multiple callbacks together
+    without needing to handle it all yourself"""
+
     _events: dict[str, event]
+
     @property
     def events(self) -> frozenset[str]:
         """An immutable set of event names attached to this class object"""
@@ -242,4 +259,3 @@ class EventList(metaclass=EventListMetaclass):
         for e in self._events.keys():
             # incase for some reason something is overwritten by the end developer
             object.__getattribute__(self, e).freeze()
-

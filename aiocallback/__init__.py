@@ -14,4 +14,3 @@ from .events import (
 __author__ = "Vizonex"
 
 from .__version__ import __version__
-
