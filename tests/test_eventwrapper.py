@@ -1,7 +1,14 @@
-from aiocallback.events import EventWrapper, event, subclassevent, contextevent, subcontextevent
+import asyncio
 import random
+import sys
+
 import pytest
 import pytest_asyncio
+
+from aiocallback.events import (EventWrapper, contextevent, event,
+                                subclassevent, subcontextevent)
+
+
 
 
 def compute_result():
@@ -75,7 +82,7 @@ async def test_eventwrapper_subclass_memeber_descriptor():
 
     test_sub_event = TestSubclassEvent()
 
-    assert test_sub_event.event_called == False, "event_called wasn't called yet but was flagged as true"
+    assert not test_sub_event.event_called, "event_called wasn't called yet but was flagged as true"
 
     SHOULDVE_CALLED_FOR = random_value()
 
@@ -105,7 +112,7 @@ async def test_eventwrapper_contextevent():
     
     test_sub_event = TestContextEvent()
 
-    assert test_sub_event.event_called == False, "event_called wasn't called yet but was flagged as true"
+    assert not test_sub_event.event_called, "event_called wasn't called yet but was flagged as true"
 
     SHOULDVE_CALLED_FOR = random_value()
 
@@ -119,7 +126,7 @@ async def test_eventwrapper_contextevent():
     assert on_subclass_called in test_sub_event.subcls_event, "subclassevent member descriptor had an attribute problem"
     test_sub_event.subcls_event.freeze()
     await test_sub_event.subcls_event.send(SHOULDVE_CALLED_FOR)
-    assert test_sub_event.event_called == False, "Event Shouldn't have been set to begin with"
+    assert not test_sub_event.event_called, "Event Shouldn't have been set to begin with"
 
 
 @pytest.mark.asyncio
@@ -135,7 +142,7 @@ async def test_eventwrapper_subcontextevent():
 
     test_sub_event = TestSubContextEvent()
 
-    assert test_sub_event.event_called == False, "event_called wasn't called yet but was flagged as true"
+    assert not test_sub_event.event_called, "event_called wasn't called yet but was flagged as true"
 
     SHOULDVE_CALLED_FOR = random_value()
 
