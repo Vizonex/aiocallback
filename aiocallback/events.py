@@ -11,7 +11,7 @@ from typing import (
     MutableMapping,
     TypeVar,
     List,
-    Iterable,
+    Iterable
 )
 
 from frozenlist import FrozenList
@@ -25,7 +25,7 @@ AsyncFunction = Callable[P, Coroutine[Any, Any, T]]
 
 
 # EventWrapper is on par with aiosignal instead of being it's subclass
-# This ultimately will save a couple of steps for many of our subclasses...
+# This saves a couple of steps for many of our subclasses...
 
 
 class EventWrapper(FrozenList[AsyncFunction[P, T]]):
@@ -56,9 +56,6 @@ class EventWrapper(FrozenList[AsyncFunction[P, T]]):
         """
         self.append(func)
         return func
-
-    def append(self, value):
-        return super().append(value)
 
     # Typehint our signal so that pyright can see
     # the arguments that need to be passed
@@ -130,7 +127,8 @@ class event(Generic[OwnerT, P, T]):
 
     # Turns the event into a descriptor variable
     # SEE: https://docs.python.org/3/howto/descriptor.html
-    # To sumarize it gets called during `__new__` which means that the wrapper will always be inbounds...
+    # To sumarize it gets called during `__new__` which means that the wrapper 
+    # will always attempt to be inbounds...
     def __set_name__(self, owner: OwnerT, name: str):
         self.__wrapper_init__(owner)
         self.name = name
@@ -156,17 +154,13 @@ class subclassevent(event[OwnerT, P, T]):
     def __get__(self, inst: OwnerT, owner) -> EventWrapper[P, T]:
         # Incase the user's object does not have a base property to use...
         if not hasattr(self, "_wrapper") or self._wrapper._owner != inst:
-            # Wrap the instance so that the context can be edited by the end user
+            # Call the instance instead so that the instance is called with the event
             self.__wrapper_init__(inst)
         return self._wrapper
 
 
 class contextevent(event[OwnerT, P, T]):
-    """Sends the class holding the event through each of the callbacks made except for the wrapper itself. 
-    
-    abstract: `bool` `WARNING IT'S DEPRECATED!` inner function upon being called is considered abstract... \
-        if `true` inner custom function will not be called with the `send()` method and it \
-        will be considered as nothing but typehinting."""
+    """Sends the class holding the event through each of the callbacks made except for the wrapper itself. """
 
     _wrapper: SelfEventWrapper[P, T]
 
@@ -189,9 +183,17 @@ class subcontextevent(contextevent):
         self._wrapper = SelfEventWrapper((self.func, ), owner)
         return self._wrapper
 
+class subclasscontextevent(subcontextevent):
+    def __init__(self, func, **kw):
+        warnings.warn(
+            "[Deprecated]: subclasscontextevent event has been renamed to subcontextevent (to try and lessen confusion), subclasscontextevent will be removed in 0.1.7",
+            DeprecationWarning,
+            2,
+        )
+        super().__init__(func, **kw)
 
-# TODO: Deprecate the old name
-subclasscontextevent = subcontextevent
+
+
 
 
 # Inspired by PEP 3115's example
@@ -237,6 +239,13 @@ class EventListMetaclass(type):
         return classdict
 
     def __new__(cls, name: str, bases: tuple[type, ...], classdict: dict, /, **kw):
+        # XXX: Attrs returns a real dictionary instead of our own by accident
+        # Currently it's unknown as to why this happens
+        if not isinstance(classdict, event_table):
+            cd = cls.__prepare__(name, bases)
+            cd.update(classdict)
+            classdict = cd
+        
         result = type.__new__(cls, name, bases, classdict, **kw)
         result._events = classdict.events  # type:ignore (classdict is actually event_table())
         return result
@@ -259,3 +268,4 @@ class EventList(metaclass=EventListMetaclass):
         for e in self._events.keys():
             # incase for some reason something is overwritten by the end developer
             object.__getattribute__(self, e).freeze()
+
