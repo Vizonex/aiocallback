@@ -8,11 +8,10 @@
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
 
-An asynchronous helper framework for writing custom event wrapper class functions made with good typehinting that is built from [aiosignal](https://github.com/aio-libs/aiosignal) under the hood with many better modifications added onto it for better typehinting and easy usage with pyright allowing for arguments to be spelled out when using it.
+An asynchronous helper framework for writing custom event wrapper class functions made with good typehinting that is based off [aiosignal](https://github.com/aio-libs/aiosignal) with better modifications added for better typehinting and easier usage with tools such as pyright or mypy allowing for arguments to be properly typehinted at when performing any created callback wich ultimately means less confusion and more action.
 
-
-One of my biggest pet peves of all time is when **callbacks are not being properly hinted at**. This library aims to fix that for vscode and other ides such as when calling the send() function.
-
+One of my biggest pet peves of all time is when **static type-checkers don't pick up what functions parameters are being used**. This library aims to fix static typecheckers when send() functions are being used, 
+ so that developers aren't second guessing what different paremeters are needed. This is a big advantage over aiosignal and was the main reson behind it's creation.
 <img src="https://raw.githubusercontent.com/Vizonex/aiocallback/main/Typehinting-Example.png" width="500px"/>
 
 
@@ -21,10 +20,13 @@ One of my biggest pet peves of all time is when **callbacks are not being proper
 
 
 # Usage:
+Aiocallback should be used when dealing with creating custom context objects or callbacks. An example might be scraping an api by a given hour 
+and calling for that data that can be defined by multiple functions. However, there are many more creative ways to use this library.
 
 ## Dependencies
-- frozenlist (The same library aiosignal utilizes)
-- typing-extensions Typehinting for Python 3.9 We plan to drop typing-extensions when 3.9 hits End of Life so that __ParamSpec__ can be utilized to it's fullest potential.
+- [frozenlist](https://github.com/aio-libs/frozenlist) we dropped aiosignal in favor of it's subclass since it's not deprecated and aiosignal's code was tiny enough to
+  copy on over to our side and then start making improvements upon it's original work.
+- [typing-extensions](https://github.com/python/typing_extensions) Typehinting for Python 3.9, plan to drop typing-extensions when 3.9 hits End of Life so that __ParamSpec__ can be utilized to it's fullest potential.
 
 
 ## Installing
@@ -118,5 +120,5 @@ from aiocallback import EventList, contextevent
 # TODOS
 - [x] Make sure we check with mypy (It works now)
 
-- [ ] Test Suite for aiocallback and eventlists
+- [x] Test Suite for aiocallback and eventlists
 
