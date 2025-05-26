@@ -12,6 +12,7 @@ An asynchronous helper framework for writing custom event wrapper class function
 
 One of my biggest pet peves of all time is when **static type-checkers don't pick up what functions parameters are being used**. This library aims to fix static typecheckers when send() functions are being used, 
  so that developers aren't second guessing what different paremeters are needed. This is a big advantage over aiosignal and was the main reson behind it's creation.
+ 
 <img src="https://raw.githubusercontent.com/Vizonex/aiocallback/main/Typehinting-Example.png" width="500px"/>
 
 
