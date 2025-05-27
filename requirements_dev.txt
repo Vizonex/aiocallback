@@ -2,3 +2,5 @@ frozenlist
 typing_extensions
 pytest
 pytest-asyncio
+winloop; platform == "Windows"
+uvloop; platform != "Windows"
