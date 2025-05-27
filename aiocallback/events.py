@@ -6,12 +6,13 @@ from functools import partial
 from typing import (
     Any,
     Callable,
+    ClassVar,
     Coroutine,
     Generic,
+    Iterable,
+    List,
     MutableMapping,
     TypeVar,
-    List,
-    Iterable
 )
 
 from frozenlist import FrozenList
@@ -27,7 +28,7 @@ AsyncFunction = Callable[P, Coroutine[Any, Any, T]]
 # EventWrapper is on par with aiosignal instead of being it's subclass
 # This saves a couple of steps for many of our subclasses...
 
-# TODO: Remigrate to using aiosignal once our added features are implemented.
+
 class EventWrapper(FrozenList[AsyncFunction[P, T]]):
     """A wrapper class for making a callback function that carries a few more methods than aiosignal has."""
 
@@ -74,9 +75,9 @@ class EventWrapper(FrozenList[AsyncFunction[P, T]]):
 
 class SelfEventWrapper(EventWrapper[P, T]):
     """A wrapper class for making an owner object sendable with all the events"""
-    def __init__(self, items = None, /, owner=None):
-        super().__init__(items, owner)
 
+    def __init__(self, items=None, /, owner=None):
+        super().__init__(items, owner)
 
     async def send(self, *args: P.args, **kwargs: P.kwargs) -> None:
         return await super().send(self._owner, *args, **kwargs)  # type: ignore
@@ -127,7 +128,7 @@ class event(Generic[OwnerT, P, T]):
 
     # Turns the event into a descriptor variable
     # SEE: https://docs.python.org/3/howto/descriptor.html
-    # To sumarize it gets called during `__new__` which means that the wrapper 
+    # To sumarize it gets called during `__new__` which means that the wrapper
     # will always attempt to be inbounds...
     def __set_name__(self, owner: OwnerT, name: str):
         self.__wrapper_init__(owner)
@@ -160,7 +161,7 @@ class subclassevent(event[OwnerT, P, T]):
 
 
 class contextevent(event[OwnerT, P, T]):
-    """Sends the class holding the event through each of the callbacks made except for the wrapper itself. """
+    """Sends the class holding the event through each of the callbacks made except for the wrapper itself."""
 
     _wrapper: SelfEventWrapper[P, T]
 
@@ -180,8 +181,9 @@ class subcontextevent(contextevent):
     being utilized."""
 
     def __wrapper_init__(self, owner):
-        self._wrapper = SelfEventWrapper((self.func, ), owner)
+        self._wrapper = SelfEventWrapper((self.func,), owner)
         return self._wrapper
+
 
 class subclasscontextevent(subcontextevent):
     def __init__(self, func, **kw):
@@ -193,22 +195,20 @@ class subclasscontextevent(subcontextevent):
         super().__init__(func, **kw)
 
 
-
-
-
 # Inspired by PEP 3115's example
 class event_table(dict):
     __slots__ = ("events",)
-    def __init__(self):
-        self['_events'] = {}
 
-    def __setitem__(self, key, value):
+    def __init__(self):
+        self["_events"] = {}
+
+    def __setitem__(self, key: str, value):
         # if the key is not already defined, add it to the
         # list of keys.
         if key not in self:
             # see if were either an event or context event.
             if isinstance(value, (event, contextevent)):
-                self['_events'][key] = value
+                self["_events"][key] = value
 
         # Call superclass
         dict.__setitem__(self, key, value)
@@ -219,8 +219,8 @@ class event_table(dict):
 
 
 class EventListMetaclass(type):
-    """A Freezeable Metaclass for getting rid of 
-   the need of freezing different member descriptors"""
+    """A Freezeable Metaclass for getting rid of
+    the need of freezing different member descriptors"""
 
     _events: dict[str, event]
 
@@ -231,19 +231,18 @@ class EventListMetaclass(type):
         classdict = event_table()
         for b in bases:
             if isinstance(b, EventListMetaclass):
-                classdict['_events'].update(b._events)
+                classdict["_events"].update(b._events)
         return classdict
 
     def __new__(cls, name: str, bases: tuple[type, ...], classdict: dict, /, **kw):
         return type.__new__(cls, name, bases, classdict, **kw)
-       
 
 
 class EventList(metaclass=EventListMetaclass):
     """A Subclassable Helper for freezing up multiple callbacks together
     without needing to handle it all yourself"""
 
-    _events: dict[str, event]
+    _events: ClassVar[dict[str, event]]
 
     @property
     def events(self) -> frozenset[str]:
@@ -256,4 +255,3 @@ class EventList(metaclass=EventListMetaclass):
         for e in self._events.keys():
             # incase for some reason something is overwritten by the end developer
             object.__getattribute__(self, e).freeze()
-
