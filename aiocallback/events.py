@@ -27,7 +27,7 @@ AsyncFunction = Callable[P, Coroutine[Any, Any, T]]
 # EventWrapper is on par with aiosignal instead of being it's subclass
 # This saves a couple of steps for many of our subclasses...
 
-
+# TODO: Remigrate to using aiosignal once our added features are implemented.
 class EventWrapper(FrozenList[AsyncFunction[P, T]]):
     """A wrapper class for making a callback function that carries a few more methods than aiosignal has."""
 
@@ -199,9 +199,8 @@ class subclasscontextevent(subcontextevent):
 # Inspired by PEP 3115's example
 class event_table(dict):
     __slots__ = ("events",)
-    events: dict[str, event | contextevent]
     def __init__(self):
-        self.events = {}
+        self['_events'] = {}
 
     def __setitem__(self, key, value):
         # if the key is not already defined, add it to the
@@ -209,7 +208,7 @@ class event_table(dict):
         if key not in self:
             # see if were either an event or context event.
             if isinstance(value, (event, contextevent)):
-                self.events[key] = value
+                self['_events'][key] = value
 
         # Call superclass
         dict.__setitem__(self, key, value)
@@ -232,23 +231,12 @@ class EventListMetaclass(type):
         classdict = event_table()
         for b in bases:
             if isinstance(b, EventListMetaclass):
-                for k, v in b._events.items():
-                    if k in classdict.events:
-                        raise ValueError(f"Event named {k} should only be defined once")
-                    classdict.events[k] = v
+                classdict['_events'].update(b._events)
         return classdict
 
     def __new__(cls, name: str, bases: tuple[type, ...], classdict: dict, /, **kw):
-        # XXX: Attrs returns a real dictionary instead of our own by accident
-        # Currently it's unknown as to why this happens
-        if not isinstance(classdict, event_table):
-            cd = cls.__prepare__(name, bases)
-            cd.update(classdict)
-            classdict = cd
-        
-        result = type.__new__(cls, name, bases, classdict, **kw)
-        result._events = classdict.events  # type:ignore (classdict is actually event_table())
-        return result
+        return type.__new__(cls, name, bases, classdict, **kw)
+       
 
 
 class EventList(metaclass=EventListMetaclass):
