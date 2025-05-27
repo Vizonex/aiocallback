@@ -8,6 +8,14 @@
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
 
+## Warning Were moving features to aiosignal
+Acording to the aiolibs devs They wanted me to move this code on over to aiosignal so hopefully that will mean people to maintain our features.
+It was my goal to have a fast-api like experience with the added bounus of member descriptors for being as lazy as possible. Hopefully
+when Aiosignal gets all of these features we will be able to fully merge with it.
+
+
+
+## What is AioCallback
 An asynchronous helper framework for writing custom event wrapper class functions made with good typehinting that is based off [aiosignal](https://github.com/aio-libs/aiosignal) with better modifications added for better typehinting and easier usage with tools such as pyright or mypy allowing for arguments to be properly typehinted at when performing any created callback wich ultimately means less confusion and more action.
 
 One of my biggest pet peves of all time is when **static type-checkers don't pick up what functions parameters are being used**. This library aims to fix static typecheckers when send() functions are being used, 
