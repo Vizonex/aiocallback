@@ -122,7 +122,8 @@ from aiocallback import EventList, contextevent
 
 
 # TODOS
-- [x] Make sure we check with mypy (It works now)
-
-- [x] Test Suite for aiocallback and eventlists
+- [ ] fix attrs support 
+- [ ] drop deprecated warnings
+- [ ] Now that I am helping maintain aiosignal itself (Never thought I would see that coming)
+I will be transforming this library into just a member descriptor library and then readd aiosignal as a requirement again.
 
