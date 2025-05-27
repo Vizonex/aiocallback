@@ -105,6 +105,17 @@ async def test_dataclass_eventlist_support():
     e = MyEvents(1, 2)
     assert e.x == 1
     assert e.y == 2
+    
+    for i in range(1, 4):
+        assert f"my_event_{i}" in e.events, f"my_event_{i} wasn't registered"
+        
+    e.freeze()
+
+    # Test Freezing
+    for attr in e.events:
+        assert e.__getattribute__(attr).frozen, f'{attr} did not freeze'
+
+
 
 
 @attrs_test
@@ -134,6 +145,16 @@ async def test_attrs_eventlist_support():
     e = MyEvents(1, 2)
     assert e.x == 1
     assert e.y == 2
+    # Test registration
+    for i in range(1, 4):
+        assert f"my_event_{i}" in e.events, f"my_event_{i} wasn't registered"
+    e.freeze()
+
+    # Test Freezing
+    for attr in e.events:
+        assert e.__getattribute__(attr).frozen, f'{attr} did not freeze'
+
+
 
 
 @pydantic_test
@@ -163,6 +184,16 @@ async def test_pydantic_eventlist_support():
     e = MyEvents(1, 2)
     assert e.x == 1
     assert e.y == 2
+    # Test registration
+    for i in range(1, 4):
+        assert f"my_event_{i}" in e.events, f"my_event_{i} wasn't registered"
+        
+    e.freeze()
+
+    # Test Freezing
+    for attr in e.events:
+        assert e.__getattribute__(attr).frozen, f'{attr} did not freeze'
+
 
 
 @msgspec_test
@@ -194,3 +225,4 @@ async def test_msgspec_struct_support():
 
 
     
+
