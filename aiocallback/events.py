@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import types
 import warnings
 from functools import partial
@@ -15,8 +16,14 @@ from typing import (
     TypeVar,
 )
 
+from deprecated_params import deprecated_params
 from frozenlist import FrozenList
-from typing_extensions import Concatenate, ParamSpec
+from propcache import cached_property
+
+if sys.version_info >= (3, 10):
+    from typing import Concatenate, ParamSpec
+else:
+    from typing_extensions import Concatenate, ParamSpec
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -83,6 +90,10 @@ class SelfEventWrapper(EventWrapper[P, T]):
         return await super().send(self._owner, *args, **kwargs)  # type: ignore
 
 
+@deprecated_params(
+    ["abstract"],
+    "abstract keyword is deprecated & it's functionality has been removed, removal of warning planned in 0.1.7",
+)
 class event(Generic[OwnerT, P, T]):
     """A Couroutine Based implementation of an asynchronous callback object. 
     This object is a replacement for aiosignal. with easier configuration options...
@@ -107,17 +118,9 @@ class event(Generic[OwnerT, P, T]):
                 2,
             )
 
-        # TODO: Remove in 0.1.6
-        if kw.get("abstract"):
-            warnings.warn(
-                "abstract keyword is deprecated & it's functionality has been removed",
-                DeprecationWarning,
-                2,
-            )
-
     # __doc__ couldn't be made into a slot
     # so we had to come up with an alternative method
-    @property
+    @cached_property
     def __doc__(self):
         return self.func.__doc__
 
@@ -188,7 +191,9 @@ class subcontextevent(contextevent):
 class subclasscontextevent(subcontextevent):
     def __init__(self, func, **kw):
         warnings.warn(
-            "[Deprecated]: subclasscontextevent event has been renamed to subcontextevent (to try and lessen confusion), subclasscontextevent will be removed in 0.1.7",
+            "subclasscontextevent event has been"
+            " renamed to subcontextevent (to try and lessen confusion),"
+            " subclasscontextevent will be removed in 0.1.7",
             DeprecationWarning,
             2,
         )
@@ -244,7 +249,7 @@ class EventList(metaclass=EventListMetaclass):
 
     _events: ClassVar[dict[str, event]]
 
-    @property
+    @cached_property
     def events(self) -> frozenset[str]:
         """An immutable set of event names attached to this class object"""
         return frozenset(self._events.keys())
