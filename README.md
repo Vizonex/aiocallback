@@ -126,5 +126,5 @@ from aiocallback import EventList, contextevent
 - [ ] drop deprecated warnings
 - [ ] Now that I am helping maintain aiosignal itself (Never thought I would see that coming)
 - [ ] Adding [Deprecared Params](https://github.com/Vizonex/deprecated-params) as a dependency since there's a few things I'm warning users about.
-I will be transforming this library into just a member descriptor library and then readd aiosignal as a requirement again.
+- [ ] I will be transforming this library into just a member descriptor library and then readd aiosignal as a requirement again.
 
