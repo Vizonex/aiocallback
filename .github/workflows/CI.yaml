@@ -4,18 +4,22 @@ name: CI
 # as well as some other people might. - Vizonex
 
 on:
-  merge_group:
   push:
     branches:
-      - 'master'
-      - '[0-9].[0-9]+'  # matches to backport branches, e.g. 3.6
-    tags: [ 'v*' ]
+    - main
+    # - >-
+    #   [0-9].[0-9]+
+    # tags:
+    # - v*
   pull_request:
     branches:
-      - 'master'
-      - '[0-9].[0-9]+'
-    
+    - main
+    # - >-
+    #   [0-9].[0-9]+
+  schedule:
+  - cron: 0 6 * * *  # Daily 6AM UTC build
 
+    
 
 jobs:
   test:
