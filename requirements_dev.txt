@@ -3,5 +3,5 @@ typing_extensions
 deprecated-params
 pytest
 pytest-asyncio
-winloop; platform == "Windows"
-uvloop; platform != "Windows"
+winloop; platform_system == "Windows"
+uvloop; platform_system != "Windows"
