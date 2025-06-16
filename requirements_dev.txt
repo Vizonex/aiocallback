@@ -1,3 +1,4 @@
+attrs
 frozenlist
 typing_extensions
 deprecated-params
