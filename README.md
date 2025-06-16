@@ -97,26 +97,6 @@ from aiocallback import EventList, contextevent
 
 ```
 
-## Why Aiocallback Over Aiosignal Or coding an approch that is like aiohttp's Trace class?
-- Currently Aiohttp's Trace Config is a big example of this problem
-
-    - One of the biggest problems with aiosignal and creating custom tracing tools like [aiohttp's Trace](https://github.com/aio-libs/aiohttp/blob/master/aiohttp/tracing.py) is that it requries a few classes in order to work compared to working with just one.
-
-    - it adds the unwanted time consumption when going in and making them and the fact that it needs to 
-    hop through a few properties in order to finally send the callback all this can be cut with a wrapper 
-    like this one 
-
-- A Developer Wishing to Program via the Trace Config Approch
-    Will be annoyed with the amount of code you need to write
-    and there is a send_xx function on everything. 
-
-- Writing a smaller project has greater sucess and chance of working than writing a big one by yourself.    
-    - From what I've learned in my past experiences is that developers tend to give up if the project becomes too big of a 
-    task. This is why smaller is better and __aiocallback__ hopes to
-    deliver a faster experience to the end developer as well as the user using whatever you choose to make or share. This is why __fastapi__ for example gets more attention than aiohttp does. 
-
-    - The Faster the project gets done the better chance you have of testing it and making smarter changes to it.
-
 ## Links
 - [Tutorial](https://youtu.be/Ly_G1CstOfA)
 
