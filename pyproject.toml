@@ -1,6 +1,6 @@
 [project]
 name = "aiocallback"
-version = "0.1.6"
+version = "0.1.7"
 description = "A library for helping configure callbacks with asyncio and aiosignal"
 readme = "README.md"
 authors = [{ name = "Vizonex" }]
