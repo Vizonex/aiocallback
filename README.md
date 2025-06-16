@@ -26,8 +26,7 @@ Aiocallback should be used when dealing with creating custom context objects or 
 and calling for that data that can be defined by multiple functions. However, there are many more creative ways to use this library.
 
 ## Dependencies
-- [frozenlist](https://github.com/aio-libs/frozenlist) we dropped aiosignal in favor of it's subclass since it's not deprecated and aiosignal's code was tiny enough to
-  copy on over to our side and then start making improvements upon it's original work.
+- [frozenlist](https://github.com/aio-libs/frozenlist) we dropped aiosignal in favor of frozenlist temporarly until aiosignal plans to support __ParamSpec__ There isn't much demand for it yet but I did help revive that library recently. 
 - [typing-extensions](https://github.com/python/typing_extensions) Typehinting for Python 3.9, plan to drop typing-extensions when 3.9 hits End of Life so that __ParamSpec__ can be utilized to it's fullest potential.
 
 
@@ -91,20 +90,26 @@ if __name__ == "__main__":
 There's an alternative way to use aiocallback where you don't need to freeze many Configurable event descriptors at a time. You should use it if your not planning to use a dataclass although we plan to implement a special EventList for msgspec.
 
 ```python
-from aiocallback import EventList, contextevent
+from aiocallback import EventList, event
 
+class MyEvents(EventList):
+    @event
+    async def on_event(self, item:str):...
 
+events = MyEvents()
+# all events get frozen for you and this method is built-in.
+events.freeze()
 
 ```
 
 ## Links
 - [Tutorial](https://youtu.be/Ly_G1CstOfA)
 
+## Alternatives
+- [aiosignal](https://github.com/aio-libs/aiosignal) I am a contributor over there as well and we're some intresting imporvements over there so keep your eyes peeled.
+
 
 # TODOS
-- [ ] fix attrs support 
-- [ ] drop deprecated warnings
-- [ ] Now that I am helping maintain aiosignal itself (Never thought I would see that coming)
-- [ ] Adding [Deprecared Params](https://github.com/Vizonex/deprecated-params) as a dependency since there's a few things I'm warning users about.
-- [ ] I will be transforming this library into just a member descriptor library and then readd aiosignal as a requirement again.
+- [x] fix attrs support (Patched in 0.1.6)
+- [x] Adding [Deprecared Params](https://github.com/Vizonex/deprecated-params) as a dependency since there's a few things I'm warning users about.
 
