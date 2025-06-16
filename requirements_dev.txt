@@ -1,5 +1,4 @@
 attrs
-pydantic; python_version < 3.14
 frozenlist
 typing_extensions
 deprecated-params
