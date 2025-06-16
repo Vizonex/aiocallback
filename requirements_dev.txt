@@ -1,4 +1,6 @@
 attrs
+pydantic
+msgspec
 frozenlist
 typing_extensions
 deprecated-params
