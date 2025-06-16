@@ -8,8 +8,12 @@ if sys.version_info < (3, 14):
     @pytest.fixture(scope="module")
     def event_loop_policy():
         if sys.platform != "win32":
-            import uvloop  # type:ignore
-            return uvloop.EventLoopPolicy()
+            try:
+                import uvloop  # type:ignore
+                return uvloop.EventLoopPolicy()
+            except ModuleNotFoundError: 
+                # pypy fallback
+                return asyncio.DefaultEventLoopPolicy()
         else:
             import winloop  # type:ignore
             return winloop.EventLoopPolicy()
