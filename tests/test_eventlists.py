@@ -1,6 +1,7 @@
 import asyncio
 import sys
 from dataclasses import dataclass
+import platform
 
 import pytest
 import pytest_asyncio
@@ -27,8 +28,12 @@ except ModuleNotFoundError:
 
 
 try:
-    import msgspec
-    MSGSPEC_NOT_FOUND = False
+    # XXX: PyPy does not do well with msgspec apparently...
+    if platform.python_implementation() != "PyPy":
+        import msgspec
+        MSGSPEC_NOT_FOUND = False
+    else:
+        MSGSPEC_NOT_FOUND = True
 except ModuleNotFoundError:
     MSGSPEC_NOT_FOUND = True
 
