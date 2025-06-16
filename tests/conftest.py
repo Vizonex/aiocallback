@@ -4,7 +4,8 @@ import sys
 import pytest
 import pytest_asyncio
 
-if sys.version_info < (3, 14):
+# XXX: PyPy has problems right now so it's also ignored.
+if sys.version_info < (3, 14) and platform.python_implementation() != "PyPy":
     @pytest.fixture(scope="module")
     def event_loop_policy():
         if sys.platform != "win32":
@@ -17,6 +18,7 @@ if sys.version_info < (3, 14):
         else:
             import winloop  # type:ignore
             return winloop.EventLoopPolicy()
+
 
 @pytest_asyncio.fixture(loop_scope="module")
 async def current_loop():
