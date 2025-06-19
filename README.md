@@ -9,7 +9,7 @@
 
 
 
-An asynchronous helper framework for writing custom event wrapper class functions made with good typehinting that is based off [aiosignal](https://github.com/aio-libs/aiosignal) with better modifications added for better typehinting and easier usage with tools such as pyright or mypy allowing for arguments to be properly typehinted at when performing any created callback wich ultimately means less confusion and more action.
+An asynchronous helper framework for writing custom event wrapper class functions made with good typehinting that is based off [aiosignal](https://github.com/aio-libs/aiosignal) with better modifications added for better typehinting and easier usage with tools such as pyright or mypy allowing for arguments to be properly typehinted at when performing any created callback which ultimately means less confusion and more action.
 
 One of my biggest pet peves of all time is when **static type-checkers don't pick up what functions parameters are being used**. This library aims to fix static typecheckers when send() functions are being used, 
  so that developers aren't second guessing what different paremeters are needed. This is a big advantage over aiosignal and was the main reson behind it's creation.
