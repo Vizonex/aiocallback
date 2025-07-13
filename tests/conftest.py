@@ -1,8 +1,8 @@
 import asyncio
-import sys
 import platform
+import sys
+
 import pytest
-import pytest_asyncio
 
 uvloop = pytest.importorskip("winloop" if sys.platform == "win32" else "uvloop")
 
@@ -13,6 +13,7 @@ if platform.python_implementation() != "PyPy":
 
     if sys.version_info >= (3, 14):
         import warnings
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
             from asyncio import DefaultEventLoopPolicy
@@ -25,7 +26,9 @@ if platform.python_implementation() != "PyPy":
             DefaultEventLoopPolicy(),
             uvloop.EventLoopPolicy(),
         ),
-        ids=str
+        ids=str,
     )
-    def event_loop_policy(request:pytest.FixtureRequest) -> asyncio.AbstractEventLoopPolicy:
+    def event_loop_policy(
+        request: pytest.FixtureRequest,
+    ) -> asyncio.AbstractEventLoopPolicy:
         return request.param

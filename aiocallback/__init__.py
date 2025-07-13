@@ -24,5 +24,5 @@ __all__ = (
     "subcontextevent",
     "subclassevent",
     "__version__",
-    "__author__"
+    "__author__",
 )

@@ -1,0 +1,6 @@
+# Virtual enviornments including uv
+.venv
+# Obviously
+__pycache__
+*.egg-info
+
