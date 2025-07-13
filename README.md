@@ -110,6 +110,5 @@ events.freeze()
 
 
 # TODOS
-- [x] fix attrs support (Patched in 0.1.6)
-- [x] Adding [Deprecared Params](https://github.com/Vizonex/deprecated-params) as a dependency since there's a few things I'm warning users about.
-
+- [ ] Trusted Publishing
+- [ ] Smaller improvements to aiocallback like documentation for future readthedocs page.
