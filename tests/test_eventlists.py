@@ -9,6 +9,8 @@ import pytest_asyncio
 from aiocallback.events import (EventList, contextevent, event, subclassevent,
                                 subcontextevent)
 
+from propcache import under_cached_property
+
 try:
     import attrs
     ATTRS_NOT_FOUND = False
@@ -230,4 +232,45 @@ async def test_msgspec_struct_support():
 
 
     
+@pytest.mark.asyncio
+async def test_eventlist_propercache_under_cached_property_support():
+    
+    class Events(EventList):
+        @event
+        async def my_event_1(self):
+            pass
+        
+        @under_cached_property
+        def value(self) -> int:
+            return 2
+    
+    e = Events()
+    assert e.value == 2
 
+@pytest.mark.asyncio
+async def test_eventlist_propercache_under_cached_property_immutable():
+
+    class Events(EventList):
+        @under_cached_property
+        def value(self) -> int:
+            return 2
+
+    e = Events()
+    assert e.value == 2
+
+    with pytest.raises(AttributeError):
+        e.value = 3
+
+# XXX: Currently not supported and fails, 
+# maybe in a future update this can get supported
+
+# @pytest.mark.asyncio
+# async def test_eventlist_allow_slots():
+#     class Events(EventList):
+#         __slots__ = ("_cache", "_events")
+#         @under_cached_property
+#         def value(self) -> int:
+#             return 2
+
+#     e = Events()
+#     assert e.value == 2

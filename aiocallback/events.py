@@ -7,7 +7,6 @@ from functools import partial
 from typing import (
     Any,
     Callable,
-    ClassVar,
     Coroutine,
     Generic,
     Iterable,
@@ -16,9 +15,8 @@ from typing import (
     TypeVar,
 )
 
-from deprecated_params import deprecated_params
 from frozenlist import FrozenList
-from propcache import cached_property
+from propcache import under_cached_property
 
 if sys.version_info >= (3, 10):
     from typing import Concatenate, ParamSpec
@@ -31,13 +29,27 @@ OwnerT = TypeVar("OwnerT")
 
 AsyncFunction = Callable[P, Coroutine[Any, Any, T]]
 
+__all__ = (
+    "EventList",
+    "EventListMetaclass",
+    "EventWrapper",
+    "SelfEventWrapper",
+    "contextevent",
+    "event",
+    "subcontextevent",
+    "subclassevent",
+)
 
-# EventWrapper is on par with aiosignal instead of being it's subclass
-# This saves a couple of steps for many of our subclasses...
-
+# EventWrapper is inspired by aiosignal but has a few internal 
+# changes made to make it more beginner-friendly.
 
 class EventWrapper(FrozenList[AsyncFunction[P, T]]):
-    """A wrapper class for making a callback function that carries a few more methods than aiosignal has."""
+    """A wrapper class for making a callback function that carries 
+    a few more methods than aiosignal has. What makes EventWrapper 
+    different from aiosignal is that it utilizes ParamSpec. This can 
+    have an advantage when you need to typehint multiple different 
+    functions, positonal and keyword arguments.
+    """
 
     __slots__ = ("_owner",)
 
@@ -47,11 +59,19 @@ class EventWrapper(FrozenList[AsyncFunction[P, T]]):
         /,
         owner=None,
     ):
+        """
+        Parameters
+        ----------
+
+        :param owner: Simillar to `aiosignal.Signal` using an owner is entirely optional but encouraged
+ 
+        """
         super().__init__(items)
         self._owner = owner
 
     def __call__(self, func: AsyncFunction[P, T]):
-        """appends a callback function to the event, returns the same function for futher use elsewhere...
+        """
+        appends a callback function to the event, returns the same function for futher use elsewhere...
         this is equivilent to calling the `append()` method::
 
             from aiocallback import EventWrapper
@@ -60,7 +80,12 @@ class EventWrapper(FrozenList[AsyncFunction[P, T]]):
             @custom_event
             async def on_event():
                 ...
-
+        
+        Parameters
+        ----------
+        
+        :param func: the function that should get called back to when the event is invoked
+        
         """
         self.append(func)
         return func
@@ -68,6 +93,9 @@ class EventWrapper(FrozenList[AsyncFunction[P, T]]):
     # Typehint our signal so that pyright can see
     # the arguments that need to be passed
     async def send(self, *args: P.args, **kw: P.kwargs) -> None:
+        """
+        Sends Parameters to invoke all functions tied to this event.
+        """
         if not self.frozen:
             raise RuntimeError("Cannot send non-frozen events.")
 
@@ -90,42 +118,42 @@ class SelfEventWrapper(EventWrapper[P, T]):
         return await super().send(self._owner, *args, **kwargs)  # type: ignore
 
 
-@deprecated_params(
-    ["abstract"],
-    "abstract keyword is deprecated & it's functionality has been removed, removal of warning planned in 0.1.7",
-)
 class event(Generic[OwnerT, P, T]):
     """A Couroutine Based implementation of an asynchronous callback object. 
     This object is a replacement for aiosignal. with easier configuration options...
-    
-    abstract: `bool` inner function upon being called is considered abstract... \
-        if `true` inner custom function will not be called with the `send()` method and it \
-        will be considered as nothing but typehinting.
     """
 
-    __slots__ = ("func", "name", "_wrapper")
-
+    __slots__ = ("_func", "_name", "_wrapper", "_cache")
     _wrapper: EventWrapper[P, T]
 
     def __init__(self, func: AsyncFunction[Concatenate[OwnerT, P], T], **kw) -> None:
-        self.func = func
-        self.name = func.__name__
+        self._func = func
+        self._name = func.__name__
+        self._cache = {}
 
         if hasattr(func, "__isabstractmethod__"):
             warnings.warn(
-                "using an abc.abstractmethod wrapper with an event is discouraged",
+                "using an abc.abstractmethod wrapper with an event is discouraged" \
+                "this will throw an error in a future version of aiocallback!",
                 UserWarning,
                 2,
             )
 
-    # __doc__ couldn't be made into a slot
+    # XXX: __doc__ couldn't be made into a slot
     # so we had to come up with an alternative method
-    @cached_property
+    @under_cached_property
     def __doc__(self):
-        return self.func.__doc__
+        return self._func.__doc__
 
     def __wrapper_init__(self, owner: OwnerT):
-        """A Special dunder method for initalizing an Event Wrapper"""
+        """
+        A Special dunder method for initalizing an Event Wrapper
+
+        Parameters
+        ----------
+
+        :param owner: the owning class object that will maintain the events called
+        """
         self._wrapper = EventWrapper(owner=owner)
         return self._wrapper
 
@@ -135,11 +163,11 @@ class event(Generic[OwnerT, P, T]):
     # will always attempt to be inbounds...
     def __set_name__(self, owner: OwnerT, name: str):
         self.__wrapper_init__(owner)
-        self.name = name
+        self._name = name
 
     # inner _event_cache is removed because using slots on the descriptor is faster
 
-    def __get__(self, inst: OwnerT, owner) -> EventWrapper[P, T]:
+    def __get__(self, inst: OwnerT, owner: type[OwnerT]) -> EventWrapper[P, T]:
         # if for some reason we did not obtain this during __new__...
         if not hasattr(self, "_wrapper"):
             self.__wrapper_init__(owner)
@@ -151,11 +179,11 @@ class event(Generic[OwnerT, P, T]):
 class subclassevent(event[OwnerT, P, T]):
     """Passes the context class to the member descriptor"""
 
-    def __wrapper_init__(self, owner: OwnerT):
-        self._wrapper = EventWrapper((partial(self.func, owner),), owner)
+    def __wrapper_init__(self, owner: OwnerT) -> EventWrapper[P, T]:
+        self._wrapper = EventWrapper((partial(self._func, owner),), owner)
         return self._wrapper
 
-    def __get__(self, inst: OwnerT, owner) -> EventWrapper[P, T]:
+    def __get__(self, inst: OwnerT, owner: type[OwnerT] | None) -> EventWrapper[P, T]:
         # Incase the user's object does not have a base property to use...
         if not hasattr(self, "_wrapper") or self._wrapper._owner != inst:
             # Call the instance instead so that the instance is called with the event
@@ -172,32 +200,21 @@ class contextevent(event[OwnerT, P, T]):
         self._wrapper = SelfEventWrapper(owner=owner)
         return self._wrapper
 
-    def __get__(self, inst: OwnerT, owner) -> SelfEventWrapper[P, T]:
+    def __get__(self, inst: OwnerT, owner: type[OwnerT] | None) -> SelfEventWrapper[P, T]:
         # Incase the user's object does not have a base property to use...
         if not hasattr(self, "_wrapper") or self._wrapper._owner != inst:
             self.__wrapper_init__(inst)
         return self._wrapper
 
 
-class subcontextevent(contextevent):
+class subcontextevent(contextevent[OwnerT, P, T]):
     """sends the class holding the event as an instance through all the callbacks made including the inner wrapper
     being utilized."""
 
-    def __wrapper_init__(self, owner):
-        self._wrapper = SelfEventWrapper((self.func,), owner)
+    def __wrapper_init__(self, owner: OwnerT) -> SelfEventWrapper:
+        self._wrapper = SelfEventWrapper((self._func,), owner)
         return self._wrapper
 
-
-class subclasscontextevent(subcontextevent):
-    def __init__(self, func, **kw):
-        warnings.warn(
-            "subclasscontextevent event has been"
-            " renamed to subcontextevent (to try and lessen confusion),"
-            " subclasscontextevent will be removed in 0.1.7",
-            DeprecationWarning,
-            2,
-        )
-        super().__init__(func, **kw)
 
 
 # Inspired by PEP 3115's example
@@ -207,7 +224,7 @@ class event_table(dict):
     def __init__(self):
         self["_events"] = {}
 
-    def __setitem__(self, key: str, value):
+    def __setitem__(self, key: str, value:Any):
         # if the key is not already defined, add it to the
         # list of keys.
         if key not in self:
@@ -224,10 +241,13 @@ class event_table(dict):
 
 
 class EventListMetaclass(type):
-    """A Freezeable Metaclass for getting rid of
-    the need of freezing different member descriptors"""
+    """A Freezeable Metaclass for freezing wrapped events in a class object"""
 
     _events: dict[str, event]
+    
+    # EventLists fully support popcache's under_cached_property 
+    # if user wants to use it to make immutable properties
+    _cache: dict[str, Any]
 
     @classmethod
     def __prepare__(
@@ -237,6 +257,7 @@ class EventListMetaclass(type):
         for b in bases:
             if isinstance(b, EventListMetaclass):
                 classdict["_events"].update(b._events)
+        classdict["_cache"] = {}
         return classdict
 
     def __new__(cls, name: str, bases: tuple[type, ...], classdict: dict, /, **kw):
@@ -247,14 +268,14 @@ class EventList(metaclass=EventListMetaclass):
     """A Subclassable Helper for freezing up multiple callbacks together
     without needing to handle it all yourself"""
 
-    _events: ClassVar[dict[str, event]]
 
-    @cached_property
+    @under_cached_property
     def events(self) -> frozenset[str]:
         """An immutable set of event names attached to this class object"""
         return frozenset(self._events.keys())
 
-    def freeze(self):
+    # TODO: Should Freeze be single-dispatch in the future?
+    def freeze(self) -> None:
         """Freezes up all the different callback events
         that were configured"""
         for e in self._events.keys():
