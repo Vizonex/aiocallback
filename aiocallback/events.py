@@ -58,13 +58,14 @@ class EventWrapper(FrozenList[AsyncFunction[P, T]]):
         self,
         items: List[AsyncFunction[P, T]] | Iterable[AsyncFunction[P, T]] | None = None,
         /,
-        owner=None,
+        owner: Any | None = None,
     ):
         """
         Parameters
         ----------
 
         :param owner: Simillar to `aiosignal.Signal` using an owner is entirely optional but encouraged
+        :param items: A list or sequence of funtions to utilize.
 
         """
         super().__init__(items)
@@ -256,9 +257,11 @@ class EventListMetaclass(type):
         cls, name: str, bases: tuple[type, ...], /, **kw
     ) -> MutableMapping[str, object]:
         classdict = event_table()
+    
         for b in bases:
             if isinstance(b, EventListMetaclass):
                 classdict["_events"].update(b._events)
+    
         classdict["_cache"] = {}
         return classdict
 
