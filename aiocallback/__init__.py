@@ -6,7 +6,6 @@ from .events import (
     SelfEventWrapper,
     contextevent,
     event,
-    subclasscontextevent,
     subcontextevent,
     subclassevent,
 )
@@ -14,3 +13,16 @@ from .events import (
 __author__ = "Vizonex"
 
 from .__version__ import __version__
+
+__all__ = (
+    "EventList",
+    "EventListMetaclass",
+    "EventWrapper",
+    "SelfEventWrapper",
+    "contextevent",
+    "event",
+    "subcontextevent",
+    "subclassevent",
+    "__version__",
+    "__author__",
+)

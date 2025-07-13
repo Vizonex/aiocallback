@@ -1,7 +1,6 @@
 attrs
 frozenlist
 typing_extensions
-deprecated-params
 pytest
 pytest-asyncio
 winloop; platform_system == "Windows"
