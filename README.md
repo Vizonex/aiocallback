@@ -106,7 +106,7 @@ events.freeze()
 - [Tutorial](https://youtu.be/Ly_G1CstOfA)
 
 ## Alternatives
-- [aiosignal](https://github.com/aio-libs/aiosignal) I am a contributor over there as well and we're making some intresting imporvements over there so keep your eyes peeled.
+- [aiosignal](https://github.com/aio-libs/aiosignal) I am a contributor over there and I revived this project pretty recently. It's a very good replacement if you want speed over control.
 
 
 # TODOS
