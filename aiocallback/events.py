@@ -128,7 +128,7 @@ class event(Generic[OwnerT, P, T]):
     __slots__ = ("_func", "_name", "_wrapper", "_cache")
     _wrapper: EventWrapper[P, T]
 
-    def __init__(self, func: AsyncFunction[Concatenate[OwnerT, P], T], **kw) -> None:
+    def __init__(self, func: AsyncFunction[Concatenate[OwnerT, P], T]) -> None:
         self._func = func
         self._name = func.__name__
         self._cache: dict[str, Any] = {}
@@ -271,7 +271,49 @@ class EventListMetaclass(type):
 
 class EventList(metaclass=EventListMetaclass):
     """A Subclassable Helper for freezing up multiple callbacks together
-    without needing to handle it all yourself"""
+    without needing to `freeze()` every single callback all by yourself::
+    
+        from aiocallback import EventList, event
+
+        class MyEvents(EventList):
+            @event
+            async def on_event(self, item:str):...
+
+        events = MyEvents()
+        # all events get frozen for you and this method is built-in.
+        events.freeze()
+
+    EventLists also accepts the majority of different third party dataclass libraries such as 
+    `pydantic <https://docs.pydantic.dev/latest/>`__, `attrs <https://attrs.org>`__ if you need them.
+    Just know that `msgspec <https://jcristharif.com/msgspec>`__ is a different case 
+    since `msgspec.Struct <https://jcristharif.com/msgspec/api.html#msgspec.Struct>`__ 
+    type is very strict so unfortunately it's not currently supported.::
+
+        from attrs import define, field
+        from aiocallback import EventList, event
+
+        @define 
+        class MyEventList(EventList):
+            x: int = field(default = 0)
+
+            @event
+            async def on_event(self, x:int) -> None:...
+            # use your imagination...
+
+        # you can pass arguments as normal...
+        events = MyEventList(x=1)
+
+        # Now you can start getting creative 
+        @events.on_event
+        async def on_my_event(x:int) -> None:
+            print(f"x is {x}")
+
+        # now you can freeze all your events you have added.
+        # from there sending later in the code shouldn't be
+        # much of an issue.
+        events.freeze()
+
+    """
     _events: dict[str, Any]
     _cache: dict[str, Any]
 

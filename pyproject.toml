@@ -1,7 +1,7 @@
 [project]
 name = "aiocallback"
-version = "0.1.7"
-description = "A library for helping configure callbacks with asyncio and aiosignal"
+version = "0.1.8"
+description = "A library for helping configure asynchronous callbacks using member descriptors"
 readme = "README.md"
 authors = [{ name = "Vizonex", email="VizonexBusiness@gmail.com" }]
 requires-python = ">=3.9"
