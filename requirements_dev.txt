@@ -2,6 +2,6 @@ attrs
 frozenlist
 typing_extensions
 pytest
-pytest-asyncio
+pytest-asyncio # TODO: Move to anyio
 winloop; platform_system == "Windows"
 uvloop; platform_system != "Windows"

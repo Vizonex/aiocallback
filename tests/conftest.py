@@ -4,7 +4,7 @@ import sys
 
 import pytest
 
-
+# TODO Move to anyio
 
 # XXX: PyPy has problems right now so it's also ignored.
 if platform.python_implementation() != "PyPy":
