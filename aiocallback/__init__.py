@@ -8,6 +8,9 @@ from .events import (
     event,
     subcontextevent,
     subclassevent,
+    DefaultEventWrapper,
+    DefaultSelfEventWrapper,
+    defaultevent
 )
 
 __author__ = "Vizonex"

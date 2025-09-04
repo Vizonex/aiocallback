@@ -8,6 +8,8 @@ from aiocallback.events import (
     event,
     subclassevent,
     subcontextevent,
+    defaultevent,
+    subdefaultevent
 )
 
 
@@ -24,7 +26,8 @@ def random_value():
 
 @pytest.mark.asyncio
 async def test_eventwrapper():
-    add_event = EventWrapper()
+    # Fun fact: You can typehint EventWrapper as a Callable, isn't that just neat?
+    add_event: EventWrapper[[int, int], None] = EventWrapper()
 
     result, a, b = compute_result()
 
@@ -189,3 +192,75 @@ async def test_eventwrapper_subcontextevent():
     await test_sub_event.subcls_event.send(SHOULDVE_CALLED_FOR)
 
     assert test_sub_event.event_called, "Inner function was not called"
+
+
+@pytest.mark.asyncio
+async def test_default_event():
+
+    class TestDefaultEvent:
+        def __init__(self):
+            self.passed_default = False
+
+        @defaultevent
+        async def on_default(self, default:bool):
+            self.passed_default = default
+        
+    e = TestDefaultEvent()
+    e.on_default.freeze()
+
+    await e.on_default.send(True)
+    assert e.passed_default == True
+
+    await e.on_default.send(False)
+    assert e.passed_default == False
+
+
+@pytest.mark.asyncio
+async def test_default_event_with_normal_event_override():
+
+    class TestDefaultEvent:
+        def __init__(self):
+            self.passed_default = False
+
+        @defaultevent
+        async def on_default(self, default:bool) -> None:
+            raise RuntimeError("Default should not have been ran and overwritten instead")
+    
+    e = TestDefaultEvent()
+    
+    @e.on_default
+    async def on_default(default:bool):
+        e.passed_default = default 
+    
+    e.on_default.freeze()
+
+    await e.on_default.send(True)
+    assert e.passed_default == True
+
+    await e.on_default.send(False)
+    assert e.passed_default == False
+
+@pytest.mark.asyncio
+async def test_default_event_with_default_event_override():
+
+    class TestDefaultEvent:
+        def __init__(self):
+            self.passed_default = False
+
+        @defaultevent
+        async def on_default(self, default:bool) -> None:
+            assert False, "Default should not have been ran and overwritten instead"
+
+    e = TestDefaultEvent()
+    
+    @e.on_default.default
+    async def on_default(default:bool):
+        e.passed_default = default 
+    
+    e.on_default.freeze()
+    await e.on_default.send(True)
+    assert e.passed_default == True
+
+    await e.on_default.send(False)
+    assert e.passed_default == False
+

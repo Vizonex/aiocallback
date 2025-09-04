@@ -266,3 +266,4 @@ async def test_eventlist_propercache_under_cached_property_immutable() -> None:
 
 #     e = Events()
 #     assert e.value == 2
+

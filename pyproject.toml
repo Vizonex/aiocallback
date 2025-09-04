@@ -6,7 +6,6 @@ readme = "README.md"
 authors = [{ name = "Vizonex", email="VizonexBusiness@gmail.com" }]
 requires-python = ">=3.9"
 dependencies = [
-    'deprecated-params>=0.1.2',
     'frozenlist',
     'typing-extensions; python_version<"3.10"',
     "propcache>=0.3.2"

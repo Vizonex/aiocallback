@@ -13,6 +13,7 @@ from typing import (
     List,
     MutableMapping,
     TypeVar,
+    Type,
 )
 
 from frozenlist import FrozenList
@@ -52,12 +53,17 @@ class EventWrapper(FrozenList[AsyncFunction[P, T]]):
     functions, positonal and keyword arguments.
     """
 
-    __slots__ = ("_owner",)
+    __slots__ = (
+        "_owner",
+        "_frozen",
+        "_items",
+    )
 
     def __init__(
         self,
         items: List[AsyncFunction[P, T]] | Iterable[AsyncFunction[P, T]] | None = None,
         /,
+        # TODO: Add Generic Value to owner
         owner: Any | None = None,
     ):
         """
@@ -120,6 +126,72 @@ class SelfEventWrapper(EventWrapper[P, T]):
         return await super().send(self._owner, *args, **kwargs)  # type: ignore
 
 
+class DefaultEventWrapper(EventWrapper[P, T]):
+    """
+    A wrapper that calls for a default event if none are provided for use.
+    """
+
+    __slots__ = ("_owner", "_frozen", "_items", "_default_func")
+
+    def __init__(
+        self,
+        items: List[AsyncFunction[P, T]] | Iterable[AsyncFunction[P, T]] | None = None,
+        /,
+        owner=None,
+        default_func: AsyncFunction[P, T] | None = None,
+    ):
+        self._default_func = default_func
+        super().__init__(items, owner)
+
+    def default(self, func: AsyncFunction[P, T]) -> AsyncFunction[P, T]:
+        """
+        Removes all other functions and replaces it with a default carrier::
+
+            from aiocallback import DefaultEventWrapper
+
+            custom_event = DefaultEventWrapper()
+            @custom_event.default
+            async def my_default():
+                ...
+
+            # default is omitted in favor of this function
+            # unless all are deleted before freezing
+            @custom_event
+            async def on_event():
+                ...
+
+        """
+        if self.frozen:
+            raise RuntimeError("Cannot edit defaults if DefaultEventWrapper is frozen.")
+
+        self._default_func = func
+        return func
+
+    async def send(self, *args: P.args, **kw: P.kwargs) -> None:
+        """
+        Sends Parameters to invoke all functions tied to this event.
+        """
+        if not self.frozen:
+            raise RuntimeError("Cannot send non-frozen events.")
+
+        if self:
+            for receiver in self:
+                await receiver(*args, **kw)  # type: ignore
+        elif self._default_func:
+            # Default function gets the right of way if no receievers are avalible.
+            await self._default_func(*args, **kw)
+
+
+class DefaultSelfEventWrapper(DefaultEventWrapper[P, T]):
+    """A wrapper class for making an owner object sendable with all the events"""
+
+    def __init__(self, items=None, /, owner=None, default_func=None):
+        super().__init__(items, owner, default_func)
+
+    async def send(self, *args: P.args, **kwargs: P.kwargs) -> None:
+        return await super().send(self._owner, *args, **kwargs)  # type: ignore
+
+
 class event(Generic[OwnerT, P, T]):
     """A Couroutine Based implementation of an asynchronous callback object.
     This object is a replacement for aiosignal. with easier configuration options...
@@ -169,7 +241,7 @@ class event(Generic[OwnerT, P, T]):
 
     # inner _event_cache is removed because using slots on the descriptor is faster
 
-    def __get__(self, inst: OwnerT, owner: OwnerT) -> EventWrapper[P, T]:
+    def __get__(self, inst: OwnerT, owner: Type[OwnerT]) -> EventWrapper[P, T]:
         # if for some reason we did not obtain this during __new__...
         if not hasattr(self, "_wrapper"):
             self.__wrapper_init__(owner)
@@ -181,11 +253,13 @@ class event(Generic[OwnerT, P, T]):
 class subclassevent(event[OwnerT, P, T]):
     """Passes the context class to the member descriptor"""
 
+    __slots__ = ("_func", "_name", "_wrapper", "_cache")
+
     def __wrapper_init__(self, owner: OwnerT) -> EventWrapper[P, T]:
         self._wrapper = EventWrapper((partial(self._func, owner),), owner)
         return self._wrapper
 
-    def __get__(self, inst: OwnerT, owner: Any) -> EventWrapper[P, T]:
+    def __get__(self, inst: OwnerT, owner: Type[OwnerT]) -> EventWrapper[P, T]:
         # Incase the user's object does not have a base property to use...
         if not hasattr(self, "_wrapper") or self._wrapper._owner != inst:
             # Call the instance instead so that the instance is called with the event
@@ -196,15 +270,15 @@ class subclassevent(event[OwnerT, P, T]):
 class contextevent(event[OwnerT, P, T]):
     """Sends the class holding the event through each of the callbacks made except for the wrapper itself."""
 
+    __slots__ = ("_func", "_name", "_wrapper", "_cache")
+
     _wrapper: SelfEventWrapper[P, T]
 
     def __wrapper_init__(self, owner: OwnerT):
         self._wrapper = SelfEventWrapper(owner=owner)
         return self._wrapper
 
-    def __get__(
-        self, inst: OwnerT, owner: Any
-    ) -> SelfEventWrapper[P, T]:
+    def __get__(self, inst: OwnerT, owner: Type[OwnerT]) -> SelfEventWrapper[P, T]:
         # Incase the user's object does not have a base property to use...
         if not hasattr(self, "_wrapper") or self._wrapper._owner != inst:
             self.__wrapper_init__(inst)
@@ -215,9 +289,43 @@ class subcontextevent(contextevent[OwnerT, P, T]):
     """sends the class holding the event as an instance through all the callbacks made including the inner wrapper
     being utilized."""
 
+    __slots__ = ("_func", "_name", "_wrapper", "_cache")
+
     def __wrapper_init__(self, owner: OwnerT) -> SelfEventWrapper:
         self._wrapper = SelfEventWrapper((self._func,), owner)
         return self._wrapper
+
+
+class defaultevent(contextevent[OwnerT, P, T]):
+    """Runs inner function if no functions were provided to be wrapped"""
+    __slots__ = ("_func", "_name", "_wrapper", "_cache")
+
+    def __wrapper_init__(self, owner: OwnerT):
+        self._wrapper = DefaultEventWrapper(owner=owner, default_func=partial(self._func, owner))
+        return self._wrapper
+    
+    def __get__(self, inst: OwnerT, owner: Type[OwnerT]) -> DefaultEventWrapper[P, T]:
+        # Incase the user's object does not have a base property to use...
+        if not hasattr(self, "_wrapper") or self._wrapper._owner != inst:
+            self.__wrapper_init__(inst)
+        return self._wrapper
+    
+
+class subdefaultevent(subclassevent[OwnerT, P, T]):
+    """Runs inner function if no functions were provided to be wrapped and passes the class
+    through it as well."""
+    __slots__ = ("_func", "_name", "_wrapper", "_cache")
+
+    def __wrapper_init__(self, owner: OwnerT):
+        self._wrapper = DefaultSelfEventWrapper(owner=owner, default_func=partial(self._func, owner))
+        return self._wrapper
+    
+    def __get__(self, inst: OwnerT, owner: Type[OwnerT]) -> DefaultSelfEventWrapper[P, T]:
+        # Incase the user's object does not have a base property to use...
+        if not hasattr(self, "_wrapper") or self._wrapper._owner != inst:
+            self.__wrapper_init__(inst)
+        return self._wrapper
+
 
 
 # Inspired by PEP 3115's example
@@ -257,11 +365,11 @@ class EventListMetaclass(type):
         cls, name: str, bases: tuple[type, ...], /, **kw
     ) -> MutableMapping[str, object]:
         classdict = event_table()
-    
+
         for b in bases:
             if isinstance(b, EventListMetaclass):
                 classdict["_events"].update(b._events)
-    
+
         classdict["_cache"] = {}
         return classdict
 
@@ -272,7 +380,7 @@ class EventListMetaclass(type):
 class EventList(metaclass=EventListMetaclass):
     """A Subclassable Helper for freezing up multiple callbacks together
     without needing to `freeze()` every single callback all by yourself::
-    
+
         from aiocallback import EventList, event
 
         class MyEvents(EventList):
@@ -283,16 +391,16 @@ class EventList(metaclass=EventListMetaclass):
         # all events get frozen for you and this method is built-in.
         events.freeze()
 
-    EventLists also accepts the majority of different third party dataclass libraries such as 
+    EventLists also accepts the majority of different third party dataclass libraries such as
     `pydantic <https://docs.pydantic.dev/latest/>`__, `attrs <https://attrs.org>`__ if you need them.
-    Just know that `msgspec <https://jcristharif.com/msgspec>`__ is a different case 
-    since `msgspec.Struct <https://jcristharif.com/msgspec/api.html#msgspec.Struct>`__ 
+    Just know that `msgspec <https://jcristharif.com/msgspec>`__ is a different case
+    since `msgspec.Struct <https://jcristharif.com/msgspec/api.html#msgspec.Struct>`__
     type is very strict so unfortunately it's not currently supported.::
 
         from attrs import define, field
         from aiocallback import EventList, event
 
-        @define 
+        @define
         class MyEventList(EventList):
             x: int = field(default = 0)
 
@@ -303,7 +411,7 @@ class EventList(metaclass=EventListMetaclass):
         # you can pass arguments as normal...
         events = MyEventList(x=1)
 
-        # Now you can start getting creative 
+        # Now you can start getting creative
         @events.on_event
         async def on_my_event(x:int) -> None:
             print(f"x is {x}")
@@ -314,9 +422,9 @@ class EventList(metaclass=EventListMetaclass):
         events.freeze()
 
     """
+
     _events: dict[str, Any]
     _cache: dict[str, Any]
-
 
     @under_cached_property
     def events(self) -> frozenset[str]:
