@@ -1,6 +1,6 @@
 [project]
 name = "aiocallback"
-version = "0.1.8"
+version = "0.1.9"
 description = "A library for helping configure asynchronous callbacks using member descriptors"
 readme = "README.md"
 authors = [{ name = "Vizonex", email="VizonexBusiness@gmail.com" }]
