@@ -28,4 +28,8 @@ __all__ = (
     "subclassevent",
     "__version__",
     "__author__",
+    "DefaultEventWrapper",
+    "DefaultSelfEventWrapper",
+    "defaultevent"
 )
+
