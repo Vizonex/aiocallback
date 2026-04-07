@@ -2,10 +2,12 @@ from aiocallback.hooks import Hook
 
 import pytest
 
+class Owner:
+    pass
 
 @pytest.fixture
 def hook() -> Hook[int]:
-    return Hook()
+    return Hook(Owner())
 
 async def test_hook(hook: Hook[int]):
     async def hook_a(i: int):
