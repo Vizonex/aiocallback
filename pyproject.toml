@@ -1,14 +1,15 @@
 [project]
 name = "aiocallback"
-version = "0.1.9"
+dynamic = ["version"]
 description = "A library for helping configure asynchronous callbacks using member descriptors"
 readme = "README.md"
 authors = [{ name = "Vizonex", email="VizonexBusiness@gmail.com" }]
 requires-python = ">=3.9"
 dependencies = [
     'frozenlist',
-    'typing-extensions; python_version<"3.10"',
-    "propcache>=0.3.2"
+    'typing-extensions; python_version<"3.13"',
+    "propcache>=0.4.1",
+    "freezabledict2>=0.1.0",
 ]
 
 keywords=["event callbacks", "callbacks", "asyncio"]
@@ -25,3 +26,10 @@ classifiers = [
 [project.urls]
     homepage = "https://github.com/Vizonex/aiocallback"
     repository = "https://github.com/Vizonex/aiocallback.git"
+
+[build-system]
+requires = ["setuptools"]
+
+[tool.setuptools.dynamic]
+version = {attr = "aiocallback.__version__"}
+

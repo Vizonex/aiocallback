@@ -12,17 +12,31 @@ from typing import (
     Iterable,
     List,
     MutableMapping,
-    TypeVar,
     Type,
+    TypeVar,
 )
 
 from frozenlist import FrozenList
 from propcache import under_cached_property
 
+if sys.version_info >= (3, 13, 3):
+    from warnings import deprecated
+else:
+    from typing_extensions import deprecated
+
 if sys.version_info >= (3, 10):
     from typing import Concatenate, ParamSpec
 else:
     from typing_extensions import Concatenate, ParamSpec
+
+# We deeply apoligize for these upcomming changes, even the author hates them :(
+broken_system_deprecation = deprecated(
+    "event system is broken because events do not initialize at the __init__ level,"
+    "it has a fatal flaw to initalize at type-level, this object will be removed in "
+    '"0.3.0" please migrate to aioplugin instead where this problem has been solved ' \
+    'these items will be rewritten in other ways '
+    "in the future."
+)
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -45,6 +59,7 @@ __all__ = (
 # changes made to make it more beginner-friendly.
 
 
+@broken_system_deprecation
 class EventWrapper(FrozenList[AsyncFunction[P, T]]):
     """A wrapper class for making a callback function that carries
     a few more methods than aiosignal has. What makes EventWrapper
@@ -116,6 +131,10 @@ class EventWrapper(FrozenList[AsyncFunction[P, T]]):
         )
 
 
+@deprecated(
+    "EventWrapper objects will be rewritten into another module sometime after 0.3.0, " \
+    "migration to aioplugin temporarly is advised."
+)
 class SelfEventWrapper(EventWrapper[P, T]):
     """A wrapper class for making an owner object sendable with all the events"""
 
@@ -126,6 +145,10 @@ class SelfEventWrapper(EventWrapper[P, T]):
         return await super().send(self._owner, *args, **kwargs)  # type: ignore
 
 
+@deprecated(
+    "EventWrapper objects will be rewritten into another module sometime after 0.3.0, " \
+    "migration to aioplugin temporarly is advised."
+)
 class DefaultEventWrapper(EventWrapper[P, T]):
     """
     A wrapper that calls for a default event if none are provided for use.
@@ -191,7 +214,10 @@ class DefaultSelfEventWrapper(DefaultEventWrapper[P, T]):
     async def send(self, *args: P.args, **kwargs: P.kwargs) -> None:
         return await super().send(self._owner, *args, **kwargs)  # type: ignore
 
-
+@deprecated(
+    "Event objects will be rewritten into another module sometime after 0.3.0, " \
+    "migration to aioplugin temporarly is advised."
+)
 class event(Generic[OwnerT, P, T]):
     """A Couroutine Based implementation of an asynchronous callback object.
     This object is a replacement for aiosignal. with easier configuration options...
@@ -298,34 +324,41 @@ class subcontextevent(contextevent[OwnerT, P, T]):
 
 class defaultevent(contextevent[OwnerT, P, T]):
     """Runs inner function if no functions were provided to be wrapped"""
+
     __slots__ = ("_func", "_name", "_wrapper", "_cache")
 
     def __wrapper_init__(self, owner: OwnerT):
-        self._wrapper = DefaultEventWrapper(owner=owner, default_func=partial(self._func, owner))
+        self._wrapper = DefaultEventWrapper(
+            owner=owner, default_func=partial(self._func, owner)
+        )
         return self._wrapper
-    
+
     def __get__(self, inst: OwnerT, owner: Type[OwnerT]) -> DefaultEventWrapper[P, T]:
         # Incase the user's object does not have a base property to use...
         if not hasattr(self, "_wrapper") or self._wrapper._owner != inst:
             self.__wrapper_init__(inst)
         return self._wrapper
-    
+
 
 class subdefaultevent(subclassevent[OwnerT, P, T]):
     """Runs inner function if no functions were provided to be wrapped and passes the class
     through it as well."""
+
     __slots__ = ("_func", "_name", "_wrapper", "_cache")
 
     def __wrapper_init__(self, owner: OwnerT):
-        self._wrapper = DefaultSelfEventWrapper(owner=owner, default_func=partial(self._func, owner))
+        self._wrapper = DefaultSelfEventWrapper(
+            owner=owner, default_func=partial(self._func, owner)
+        )
         return self._wrapper
-    
-    def __get__(self, inst: OwnerT, owner: Type[OwnerT]) -> DefaultSelfEventWrapper[P, T]:
+
+    def __get__(
+        self, inst: OwnerT, owner: Type[OwnerT]
+    ) -> DefaultSelfEventWrapper[P, T]:
         # Incase the user's object does not have a base property to use...
         if not hasattr(self, "_wrapper") or self._wrapper._owner != inst:
             self.__wrapper_init__(inst)
         return self._wrapper
-
 
 
 # Inspired by PEP 3115's example
@@ -351,6 +384,7 @@ class event_table(dict):
 # so there needs to be a workaround inplace in the future
 
 
+@broken_system_deprecation
 class EventListMetaclass(type):
     """A Freezeable Metaclass for freezing wrapped events in a class object"""
 
