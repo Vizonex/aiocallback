@@ -9,6 +9,7 @@ class Owner:
 def hook() -> Hook[int]:
     return Hook(Owner())
 
+@pytest.mark.anyio
 async def test_hook(hook: Hook[int]):
     async def hook_a(i: int):
         yield f"{i}"
@@ -18,6 +19,7 @@ async def test_hook(hook: Hook[int]):
     async with hook.send(1) as h:
         assert h["a"] == "1"
 
+@pytest.mark.anyio
 async def test_unfrozen_runtimeerror(hook: Hook[int]):
     async def hook_a(i: int):
         yield f"{i}"
