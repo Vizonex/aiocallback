@@ -1,4 +1,26 @@
-# TODO: For now testing for the Hook object is done in aioplugin. 
-# It will all be moved here in the future. All other remaining items 
-# are deprecated and not tested anymore and will be updated with newer tools 
-# so stay tuned :) for now migrate to aioplugin if your not intrested in using hooks.
+from aiocallback.hooks import Hook
+
+import pytest
+
+
+@pytest.fixture
+def hook() -> Hook[int]:
+    return Hook()
+
+async def test_hook(hook: Hook[int]):
+    async def hook_a(i: int):
+        yield f"{i}"
+
+    hook["a"] = hook_a
+    hook.freeze()
+    async with hook.send(1) as h:
+        assert h["a"] == "1"
+
+async def test_unfrozen_runtimeerror(hook: Hook[int]):
+    async def hook_a(i: int):
+        yield f"{i}"
+
+    hook["a"] = hook_a
+    with pytest.raises(RuntimeError, match="Cannot enter into non-frozen life-cycle."):
+        async with hook.send(1) as h:
+            pass

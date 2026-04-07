@@ -1,0 +1,8 @@
+anyio
+attrs
+frozenlist
+pytest
+trio
+typing_extensions
+uvloop; platform_system != "Windows"
+winloop; platform_system == "Windows"
