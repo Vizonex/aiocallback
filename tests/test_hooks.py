@@ -1,4 +1,5 @@
 from aiocallback.hooks import Hook
+from contextlib import asynccontextmanager
 
 import pytest
 
@@ -11,6 +12,7 @@ def hook() -> Hook[int]:
 
 @pytest.mark.anyio
 async def test_hook(hook: Hook[int]):
+    @asynccontextmanager
     async def hook_a(i: int):
         yield f"{i}"
 

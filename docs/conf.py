@@ -9,9 +9,9 @@
 try:
     from aiocallback import __version__
 except ModuleNotFoundError:
-    __version__ = "0.1.7"
+    __version__ = "0.2.0"
 
-project = "deprecated-params"
+project = "aiocallback"
 copyright = "2025, Vizonex"
 author = "Vizonex"
 release = __version__
