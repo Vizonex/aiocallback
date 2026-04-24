@@ -4,12 +4,13 @@ dynamic = ["version"]
 description = "A library for helping configure asynchronous callbacks using member descriptors"
 readme = "README.md"
 authors = [{ name = "Vizonex", email="VizonexBusiness@gmail.com" }]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     'frozenlist',
     'typing-extensions; python_version<"3.13"',
     "propcache>=0.4.1",
     "freezabledict2>=0.1.0",
+    "reductable-params>=0.3.0",
 ]
 
 keywords=["event callbacks", "callbacks", "asyncio"]
@@ -33,3 +34,11 @@ requires = ["setuptools"]
 [tool.setuptools.dynamic]
 version = {attr = "aiocallback.__version__"}
 
+[tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
+extend-select = [
+    "I",
+    "UP"
+]
