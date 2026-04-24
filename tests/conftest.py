@@ -1,8 +1,5 @@
-import asyncio
-import platform
-import sys
-
 import pytest
+
 
 @pytest.fixture(
     params=[

@@ -1,27 +1,16 @@
 from __future__ import annotations
 
 import inspect
-import sys
 from collections.abc import AsyncIterator, Callable
-from contextlib import AbstractAsyncContextManager, AsyncExitStack, asynccontextmanager
+from contextlib import (
+    AbstractAsyncContextManager,
+    AsyncExitStack,
+    asynccontextmanager,
+)
 
 from freezabledict import FrozenDict
 
-if sys.version_info >= (3, 11):
-    from typing import Unpack  # pragma: no cover - version differences
-else:
-    from typing_extensions import Unpack
-
-if sys.version_info >= (3, 13):
-    from typing import TypeVarTuple  # pragma: no cover - version differences
-else:
-    from typing_extensions import TypeVarTuple
-
-
-# NOTE: This is duplicate code of aioplugin, this was supposed to be it's original destination.
-# This will become a dependency of aioplugin when all deprecated components have been removed.
-
-_Ts = TypeVarTuple("_Ts", default=Unpack[tuple[()]])
+from .typedefs import Unpack, _Ts
 
 
 def is_asynccontextmanagerfunction(obj: object) -> bool:
@@ -35,7 +24,9 @@ def is_asynccontextmanagerfunction(obj: object) -> bool:
 
 
 class Hook(
-    FrozenDict[str, Callable[[Unpack[_Ts]], AbstractAsyncContextManager[object]]]
+    FrozenDict[
+        str, Callable[[Unpack[_Ts]], AbstractAsyncContextManager[object]]
+    ]
 ):
     """Hook for calling back multiple context manager-like fixtures"""
 
@@ -44,9 +35,7 @@ class Hook(
         self._owner = owner
 
     def __repr__(self):
-        return "<{}(frozen={}, owner={}, {!r})".format(
-            self.__class__.__name__, self._frozen, self._owner, self._items
-        )
+        return f"<{self.__class__.__name__}(frozen={self._frozen}, owner={self._owner}, {self._items!r})"
 
     @asynccontextmanager
     async def send(
