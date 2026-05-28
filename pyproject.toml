@@ -10,7 +10,7 @@ dependencies = [
     'typing-extensions; python_version<"3.13"',
     "propcache>=0.4.1",
     "freezabledict2>=0.2.0",
-    "reductable-params>=1.0.0",
+    "reductable-params==0.5.0", ## 1.0.0 segfaults will need fixing...
 ]
 
 keywords=["event callbacks", "callbacks", "asyncio"]
