@@ -4,5 +4,5 @@ trio
 typing_extensions
 uvloop; platform_system != "Windows"
 winloop; platform_system == "Windows"
-ruff==0.16.5
+ruff==0.16.6
 -e .
