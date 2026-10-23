@@ -41,8 +41,8 @@ class RuffLinter:
 
 
 class TestFormatting(RuffLinter):
-    CMD = ["format", "--check", "--diff"]
+    CMD: typing.ClassVar[list[str]] = ["format", "--check", "--diff"]
 
 
 class TestSouceCode(RuffLinter):
-    CMD = ["check"]
+    CMD: typing.ClassVar[list[str]] = ["check"]

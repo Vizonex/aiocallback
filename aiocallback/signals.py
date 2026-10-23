@@ -13,12 +13,12 @@ from .typedefs import _P, _P2, _T
 # in your own code is the perfect way to workaround any speed loss.
 
 
-class ParentSignal(Generic[_P], FrozenList[Callable[..., Awaitable[object]]]):
+class ParentSignal(FrozenList[Callable[..., Awaitable[object]]], Generic[_P]):
     """A Parent signal takes it's given parameter specifications and
     creates an installation pattern for writing clean an beautiful callback
     systems."""
 
-    __slots__ = ("_owner", "_cache", "_parent")
+    __slots__ = ("_cache", "_owner", "_parent")
 
     def __init__(self, owner: object, parent: Callable[_P, Awaitable[object]]):
         super().__init__()
