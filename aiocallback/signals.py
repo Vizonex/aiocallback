@@ -20,7 +20,9 @@ class ParentSignal(FrozenList[Callable[..., Awaitable[object]]], Generic[_P]):
 
     __slots__ = ("_cache", "_owner", "_parent")
 
-    def __init__(self, owner: object, parent: Callable[_P, Awaitable[object]]):
+    def __init__(
+        self, owner: object, parent: Callable[_P, Awaitable[object]]
+    ) -> None:
         super().__init__()
         self._owner = owner
         self._cache = {}

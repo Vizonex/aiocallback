@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncGenerator, Callable
 from contextlib import (
     AbstractAsyncContextManager,
     AsyncExitStack,
@@ -40,7 +40,7 @@ class Hook(
     @asynccontextmanager
     async def send(
         self, *args: Unpack[_Ts], **kwargs
-    ) -> AsyncIterator[dict[str, object]]:
+    ) -> AsyncGenerator[dict[str, object], None]:
         """Sends all life-cycles and returns them for use elsewhere as a
         dictionary object"""
         if not self.frozen:

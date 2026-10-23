@@ -3,14 +3,16 @@ object updates."""
 
 import inspect
 from collections.abc import (
+    AsyncGenerator,
     AsyncIterable,
-    AsyncIterator,
     Awaitable,
     Callable,
+    Hashable,
     Iterable,
     Sequence,
 )
 from contextlib import asynccontextmanager
+from functools import _make_key
 from types import TracebackType
 from typing import Any, Generic, overload
 
@@ -37,8 +39,8 @@ class Updater(Generic[_T]):
         # memory optimization was to store the hash instead of the object
         # this saves memory and also allows for a mutating object to be
         # considered a valid entry if it comes back as being not the same.
-        self._current: set[int] = set()
-        self._previous: set[int] = set()
+        self._current: set[Hashable] = set()
+        self._previous: set[Hashable] = set()
 
     def reset(self) -> None:
         """Clears currently seen and stores it as previously seen data."""
@@ -58,7 +60,7 @@ class Updater(Generic[_T]):
         """closes the newly updated cycle calling `reset(...)` for you."""
         self.reset()
 
-    def __hash_item__(self, item: _T) -> int:
+    def __hash_item__(self, item: _T) -> Hashable | int:
         """Hashes item that needs checking.
         This allows for extended manipulation and subclassing"""
         return hash(item)
@@ -99,8 +101,8 @@ class Updater(Generic[_T]):
 class MapUpdater(Updater[dict[_K, _V]]):
     """Observes updates from a dictionary"""
 
-    def __hash_item__(self, item: dict[_K, _V]):
-        return hash(tuple(sorted(item.items())))
+    def __hash_item__(self, item: dict[_K, _V]) -> Hashable:
+        return _make_key((), kwds=item, typed=True)
 
 
 class UpdateSignal(ParentSignal[_P]):
@@ -108,11 +110,13 @@ class UpdateSignal(ParentSignal[_P]):
 
     __slots__ = ("_cache", "_owner", "_parent", "_updater")
 
-    def __init__(self, owner: object, parent: Callable[_P, Awaitable[object]]):
+    def __init__(
+        self, owner: object, parent: Callable[_P, Awaitable[object]]
+    ) -> None:
         super().__init__(owner, parent)
         self._updater: MapUpdater[str, Any] = MapUpdater(self.notify)
 
-    async def notify(self, data: dict[str, Any]):
+    async def notify(self, data: dict[str, Any]) -> None:
         """Notifies updater that a new object is now ready.
         This is mostly an injectable function incase user needs to
         subclass off :class:`UpdateSignal` and provide hooks and
@@ -129,7 +133,7 @@ class UpdateSignal(ParentSignal[_P]):
             await s(data)
 
     @asynccontextmanager
-    async def automatic(self) -> AsyncIterator[None]:
+    async def automatic(self) -> AsyncGenerator[None, None]:
         """Performs restting of the updater automatically
         as an asyncrhonous context-manager. On exit
         all items that were registered on the previous cycle
@@ -162,7 +166,7 @@ class UpdateSignal(ParentSignal[_P]):
     @overload
     async def poll(
         self: "UpdateSignal[_T]",
-        items: Sequence[_T] | Iterable[_T] | AsyncIterable[_T, Any],
+        items: Sequence[_T] | Iterable[_T] | AsyncGenerator[_T, Any],
     ) -> None:
         """Polls items into :function:`.update()`.
 
@@ -182,7 +186,7 @@ class UpdateSignal(ParentSignal[_P]):
 
     @overload
     async def poll(
-        self, items: Sequence[Any] | Iterable[Any] | AsyncIterable[Any, Any]
+        self, items: Sequence[Any] | Iterable[Any] | AsyncGenerator[Any, Any]
     ) -> None:
         """Polls items into :function:`.update()`.
 
@@ -201,7 +205,7 @@ class UpdateSignal(ParentSignal[_P]):
         """
 
     async def poll(
-        self, items: Sequence[Any] | Iterable[Any] | AsyncIterable[Any, Any]
+        self, items: Sequence[Any] | Iterable[Any] | AsyncGenerator[Any, Any]
     ) -> None:
         """Polls items into :function:`.update()`.
 
