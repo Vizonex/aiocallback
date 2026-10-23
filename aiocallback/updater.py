@@ -27,7 +27,7 @@ class Updater(Generic[_T]):
     medium sized amounts of traffic to inspect.
     """
 
-    __slots__ = ("_current", "_previous", "_cb")
+    __slots__ = ("_cb", "_current", "_previous")
 
     def __init__(self, on_update: Callable[[_T], Awaitable[None]]) -> None:
         """
@@ -106,7 +106,7 @@ class MapUpdater(Updater[dict[_K, _V]]):
 class UpdateSignal(ParentSignal[_P]):
     """Searches for unique elements before being allowed to send them."""
 
-    __slots__ = ("_owner", "_cache", "_parent", "_updater")
+    __slots__ = ("_cache", "_owner", "_parent", "_updater")
 
     def __init__(self, owner: object, parent: Callable[_P, Awaitable[object]]):
         super().__init__(owner, parent)

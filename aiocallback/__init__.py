@@ -1,4 +1,3 @@
-# ruff: noqa: E402,F401
 from .hooks import Hook
 from .signals import ParentSignal
 from .updater import UpdateSignal
