@@ -110,7 +110,9 @@ class UpdateSignal(ParentSignal[_P]):
 
     __slots__ = ("_cache", "_owner", "_parent", "_updater")
 
-    def __init__(self, owner: object, parent: Callable[_P, Awaitable[object]]) -> None:
+    def __init__(
+        self, owner: object, parent: Callable[_P, Awaitable[object]]
+    ) -> None:
         super().__init__(owner, parent)
         self._updater: MapUpdater[str, Any] = MapUpdater(self.notify)
 
