@@ -101,7 +101,7 @@ class Updater(Generic[_T]):
 class MapUpdater(Updater[dict[_K, _V]]):
     """Observes updates from a dictionary"""
 
-    def __hash_item__(self, item: dict[_K, _V]):
+    def __hash_item__(self, item: dict[_K, _V]) -> Hashable:
         return _make_key((), kwds=item, typed=True)
 
 
@@ -110,11 +110,11 @@ class UpdateSignal(ParentSignal[_P]):
 
     __slots__ = ("_cache", "_owner", "_parent", "_updater")
 
-    def __init__(self, owner: object, parent: Callable[_P, Awaitable[object]]):
+    def __init__(self, owner: object, parent: Callable[_P, Awaitable[object]]) -> None:
         super().__init__(owner, parent)
         self._updater: MapUpdater[str, Any] = MapUpdater(self.notify)
 
-    async def notify(self, data: dict[str, Any]):
+    async def notify(self, data: dict[str, Any]) -> None:
         """Notifies updater that a new object is now ready.
         This is mostly an injectable function incase user needs to
         subclass off :class:`UpdateSignal` and provide hooks and
