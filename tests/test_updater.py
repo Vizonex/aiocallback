@@ -77,7 +77,6 @@ class TestCache:
         cache.add(3)
         assert cache.keys() == {1, 2, 3}
 
-        
 
 @pytest.mark.anyio
 async def test_updatable_callbacks(

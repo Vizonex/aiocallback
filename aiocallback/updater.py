@@ -50,7 +50,7 @@ class Cache(Generic[_K]):
 
     def __init__(self) -> None:
         # This can be slightly faster than utilizing 2 different sets
-        # As both need to be checked to prevent older entries from past 
+        # As both need to be checked to prevent older entries from past
         # sessions from leaking out and then reappearing.
         # Groups are marked via value either marked as NEW or OLD
         self._cache: dict[_K, ItemType] = {}
@@ -69,10 +69,10 @@ class Cache(Generic[_K]):
 
     def reset(self) -> None:
         """Cleans up previously seen data and marks newly seen data as part of an older set.
-        If there are no entries that are seen as new. Cache will not be updated if there are 
+        If there are no entries that are seen as new. Cache will not be updated if there are
         no newer entries."""
 
-        # Confusing wording but basically if there are no new entries then it's not a good 
+        # Confusing wording but basically if there are no new entries then it's not a good
         # idea update the cache.
         self._cache = {
             k: ItemType.OLD
