@@ -9,7 +9,7 @@
 try:
     from aiocallback import __version__
 except ModuleNotFoundError:
-    __version__ = "0.2.0"
+    __version__ = "0.5.0"
 
 project = "aiocallback"
 copyright = "2025, Vizonex"
