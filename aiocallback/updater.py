@@ -12,12 +12,81 @@ from collections.abc import (
     Sequence,
 )
 from contextlib import asynccontextmanager
+from enum import IntEnum, auto
 from functools import _make_key
 from types import TracebackType
 from typing import Any, Generic, overload
 
 from .signals import ParentSignal
 from .typedefs import _K, _P, _T, _V, Self
+
+# TODO: (Seperate Cache) into it's own little library in a later update.
+# Might also be possible to cythonize it's code for even greater speeds.
+
+
+# Easier to read than a boolean would provide for us.
+class ItemType(IntEnum):
+    """Observed Object Type. Defines which set of items the being observed belong to."""
+
+    NEW = auto()
+    OLD = auto()
+
+
+class Cache(Generic[_K]):
+    """Helps observe new and old items coming in and out of iteself.
+    This LRU method is based on a 2 group system that clears itself
+    based on a un-provided max-amount of entries.
+    """
+
+    # This cache object can prevent problems when needing to load
+    # a random amount of entries on a page where page 1 may contain
+    # 20 entries many moments later maybe the next referesh 30.
+    # Those 10 differences need to be captured but also unseen entries moving
+    # to page 2 maybe considered unimportant. Old entries can then reset
+    # and never see page 2 (which is what we want to happen) so that memory
+    # never has the chance of overflowing with older entries.
+
+    __slots__ = ("_cache",)
+
+    def __init__(self) -> None:
+        # This can be slightly faster than utilizing 2 different sets
+        # As both need to be checked to prevent older entries from past
+        # sessions from leaking out and then reappearing.
+        # Groups are marked via value either marked as NEW or OLD
+        self._cache: dict[_K, ItemType] = {}
+
+    def __contains__(self, item: _K) -> bool:
+        """Checks both new and old entries to see if this target item has been observed previously.
+        This prevents data from previously seen and currently seen from being clustered."""
+        return item in self._cache
+
+    def add(self, item: _K) -> None:
+        """Sets item observed as being a new entry for the remainder of it's session until reset.
+
+        :param item: the new item to mark as being a newer entry.
+        """
+        self._cache[item] = ItemType.NEW
+
+    def reset(self) -> None:
+        """Cleans up previously seen data and marks newly seen data as part of an older set.
+        If there are no entries that are seen as new. Cache will not be updated if there are
+        no newer entries."""
+
+        # Confusing wording but basically if there are no new entries then it's not a good
+        # idea update the cache.
+        self._cache = {
+            k: ItemType.OLD
+            for k, v in self._cache.items()
+            if v == ItemType.NEW
+        } or self._cache
+
+    def clear(self) -> None:
+        """Clears all entries in the cache. All entries will be forgotten about."""
+        self._cache.clear()
+
+    def keys(self) -> set[_T]:
+        """useful when debugging the cache to see what kinds of items are used."""
+        return set(self._cache.keys())
 
 
 class Updater(Generic[_T]):
@@ -29,7 +98,7 @@ class Updater(Generic[_T]):
     medium sized amounts of traffic to inspect.
     """
 
-    __slots__ = ("_cb", "_current", "_previous")
+    __slots__ = ("_cache", "_cb")
 
     def __init__(self, on_update: Callable[[_T], Awaitable[None]]) -> None:
         """
@@ -39,14 +108,11 @@ class Updater(Generic[_T]):
         # memory optimization was to store the hash instead of the object
         # this saves memory and also allows for a mutating object to be
         # considered a valid entry if it comes back as being not the same.
-        self._current: set[Hashable] = set()
-        self._previous: set[Hashable] = set()
+        self._cache: Cache[Hashable] = Cache()
 
     def reset(self) -> None:
         """Clears currently seen and stores it as previously seen data."""
-        self._previous.clear()
-        self._previous.update(self._current)
-        self._current.clear()
+        self._cache.reset()
 
     async def __aenter__(self) -> Self:
         return self
@@ -74,10 +140,10 @@ class Updater(Generic[_T]):
         """
         # storing the hash instead of the value itself prevents performance regressions...
         _hash = self.__hash_item__(item)
-        if (_hash not in self._current) and (_hash not in self._previous):
+        if _hash not in self._cache:
             await self._cb(item)
-        # Store item so that it isn't called in this checked session.
-        self._current.add(_hash)
+        # Store item so that it isn't called again in this checked session.
+        self._cache.add(_hash)
 
     async def poll(
         self, items: Sequence[_T] | Iterable[_T] | AsyncIterable[_T, Any]

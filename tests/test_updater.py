@@ -1,6 +1,6 @@
 import pytest
 
-from aiocallback.updater import Updater, UpdateSignal
+from aiocallback.updater import Cache, Updater, UpdateSignal
 
 
 @pytest.fixture
@@ -23,8 +23,65 @@ class Owner:
         pass
 
 
+class TestCache:
+    def test_cache(self) -> None:
+        cache: Cache[int] = Cache()
+        cache.add(1)
+        cache.add(2)
+        cache.add(2)
+        cache.add(3)
+        assert cache.keys() == {1, 2, 3}
+
+    def test_cache_ordering_mechnaism(self) -> None:
+        cache: Cache[int] = Cache()
+        cache.add(1)
+        cache.add(2)
+        cache.add(2)
+        cache.add(3)
+        cache.reset()
+        # now add 4, 5, 6  these should be existant on the next movement made.
+        cache.add(4)
+        cache.add(5)
+        cache.add(6)
+        assert cache.keys() == {1, 2, 3, 4, 5, 6}
+        # reset and remove 1, 2, 3 there should only be a 4, 5 and 6
+        cache.reset()
+        assert cache.keys() == {4, 5, 6}
+
+    def test_disallowing_older_entries_even_with_double_reset(self) -> None:
+        cache: Cache[int] = Cache()
+        cache.add(1)
+        cache.add(2)
+        cache.add(2)
+        cache.add(3)
+        cache.reset()
+        # There were no entires to update with so this reset is a dud.
+        cache.reset()
+        # now add 4, 5, 6  these should be existant on the next movement made.
+        cache.add(4)
+        cache.add(5)
+        cache.add(6)
+        assert cache.keys() == {1, 2, 3, 4, 5, 6}
+
+    def test_clearing_the_cache(self) -> None:
+        cache: Cache[int] = Cache()
+        cache.add(1)
+        cache.add(2)
+        cache.add(2)
+        cache.add(3)
+        cache.clear()
+        assert not cache.keys()
+        cache.add(1)
+        cache.add(2)
+        cache.add(2)
+        cache.add(3)
+        assert cache.keys() == {1, 2, 3}
+
+
 @pytest.mark.anyio
-async def test_updatable_callbacks(updater: tuple[Updater[int], list[int]]):
+async def test_updatable_callbacks(
+    updater: tuple[Updater[int], list[int]],
+) -> None:
     listener, order = updater
     await listener.check(1)
     await listener.check(2)
@@ -35,14 +92,14 @@ async def test_updatable_callbacks(updater: tuple[Updater[int], list[int]]):
 
 
 @pytest.mark.anyio
-async def test_polling(updater: tuple[Updater[int], list[int]]):
+async def test_polling(updater: tuple[Updater[int], list[int]]) -> None:
     listener, order = updater
     await listener.poll([1, 2, 2, 2, 3])
     assert order == [1, 2, 3]
 
 
 @pytest.mark.anyio
-async def test_polling_async(updater: tuple[Updater[int], list[int]]):
+async def test_polling_async(updater: tuple[Updater[int], list[int]]) -> None:
     listener, order = updater
 
     async def async_poll():
